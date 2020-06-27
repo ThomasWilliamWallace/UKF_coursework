@@ -53,9 +53,11 @@ class UKF {
 
   // state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   Eigen::VectorXd x_;
+  Eigen::VectorXd x_aug_;
 
   // state covariance matrix
   Eigen::MatrixXd P_;
+  Eigen::MatrixXd P_aug_;
 
   // predicted sigma points matrix
   Eigen::MatrixXd Xsig_pred_;
@@ -93,11 +95,14 @@ class UKF {
   // Augmented state dimension
   int n_aug_;
 
+  int n_sigma_;
+
   // Sigma point spreading parameter
   double lambda_;
 
 private:
     long long timestamp_;  // Most recently processed timestamp
+    Eigen::MatrixXd sigma_points_;
 
     Eigen::VectorXd RadarMeasurementFunction(MeasurementPackage meas_package);
     Eigen::VectorXd LidarMeasurementFunction(MeasurementPackage meas_package);

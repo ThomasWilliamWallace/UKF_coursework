@@ -16,11 +16,18 @@ UKF::UKF() {
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
 
+  n_x_ = 5;
+  n_aug_ = 7;
+  n_sigma_ = 1 + 2 * n_aug_;
+
   // initial state vector
-  x_ = VectorXd(5);
+  x_ = VectorXd(n_x_);
+  x_aug_ = VectorXd(n_aug_);
 
   // initial covariance matrix
-  P_ = MatrixXd(5, 5);
+  P_ = MatrixXd::Identity(n_x_, n_x_);
+  P_aug_ = MatrixXd(n_aug_, n_aug_);
+  P_aug_.fill(0.0);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 3;
@@ -56,14 +63,13 @@ UKF::UKF() {
    * TODO: Complete the initialization. See ukf.h for other member properties.
    * Hint: one or more values initialized above might be wildly off...
    */
-   n_x_ = 5;
-   n_aug_ = 7;
    lambda_ = 3 - n_aug_;
-   weights_ = Eigen::VectorXd(1 + n_aug_ * 2);
+   weights_ = Eigen::VectorXd(n_sigma_);
    weights_(0) = lambda_ / (lambda_ + n_aug_);
    for (int sigma = 0; sigma < weights_.size(); sigma++) {
        weights_(sigma) = 1 / (2 * (lambda_ + n_aug_));
    }
+   sigma_points_ = Eigen::MatrixXd(n_aug_, n_sigma_);
 }
 
 UKF::~UKF() {}
@@ -91,6 +97,26 @@ void UKF::Prediction(double delta_t) {
    * and the state covariance matrix.
    */
    std::cout << "UKF::Prediction, x_=" << x_ << "\n";
+
+   x_aug_ << x_, 0, 0;
+   P_aug_.block(0, 0, n_x_, n_x_) = P_;
+   P_aug_(n_x_, n_x_) = std_a_ * std_a_;
+   P_aug_(n_x_ + 1, n_x_ + 1) = std_yawdd_ * std_yawdd_;
+   MatrixXd sqrt_matrix = P_aug_.llt().matrixL();
+   MatrixXd sigma_diff = std::sqrt(lambda_ + n_aug_) * sqrt_matrix;
+
+   // Generate sigma points
+    sigma_points_.col(0) = x_aug_;
+    for (int sigma = 0; sigma < n_aug_; sigma++) {
+        sigma_points_.col(1 + sigma) = x_aug_ + sigma_diff.col(sigma);
+    }
+    for (int sigma = 0; sigma < n_aug_; sigma++) {
+        sigma_points_.col(1 + n_aug_ + sigma) = x_aug_ - sigma_diff.col(sigma);
+    }
+
+   // Apply process model to sigma points
+
+   // Calculate mean and covariance of sigma points
 }
 
 Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
@@ -116,9 +142,13 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     Eigen::VectorXd measured_state = LidarMeasurementFunction(meas_package);
 
     if (is_initialized_) {
+        // Apply measurement model to sigma points
+
+        // Calculate mean and covariance from sigma points
 
     } else {
         x_ << measured_state;
+//        P_ << ;
     }
 }
 
@@ -148,8 +178,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   Eigen::VectorXd measured_state = RadarMeasurementFunction(meas_package);
 
   if (is_initialized_) {
+      // Apply measurement model to sigma points
+
+      // Calculate mean and covariance from sigma points
 
   } else {
       x_ << measured_state;
+//      P_ << 0;
   }
 }
