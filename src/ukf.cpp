@@ -1,5 +1,6 @@
 #include "ukf.h"
 #include "Eigen/Dense"
+#include <cmath>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -21,10 +22,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = (M_PI * 3 / 6) / 2;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -54,6 +55,14 @@ UKF::UKF() {
    * TODO: Complete the initialization. See ukf.h for other member properties.
    * Hint: one or more values initialized above might be wildly off...
    */
+   n_x_ = 5;
+   n_aug_ = 7;
+   lambda_ = 3 - n_aug_;
+   weights_ = Eigen::VectorXd(1 + n_aug_ * 2);
+   weights_(0) = lambda_ / (lambda_ + n_aug_);
+   for (int sigma = 0; sigma < weights_.size(); sigma++) {
+       weights_(sigma) = 1 / (2 * (lambda_ + n_aug_));
+   }
 }
 
 UKF::~UKF() {}
@@ -63,6 +72,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    * TODO: Complete this function! Make sure you switch between lidar and radar
    * measurements.
    */
+
 }
 
 void UKF::Prediction(double delta_t) {
