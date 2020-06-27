@@ -74,7 +74,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    * measurements.
    */
   //  std::cout << "UKF::ProcessMeasurement, x_=" << x_ << "\n";
-
+  Prediction(meas_package.timestamp_ - timestamp_);
+  if (meas_package.sensor_type_ == meas_package.LASER) {
+      UpdateLidar(meas_package);
+  } else {
+      UpdateRadar(meas_package);
+  }
+  timestamp_ = meas_package.timestamp_;
+  is_initialized_ = true;
 }
 
 void UKF::Prediction(double delta_t) {
@@ -86,6 +93,19 @@ void UKF::Prediction(double delta_t) {
    std::cout << "UKF::Prediction, x_=" << x_ << "\n";
 }
 
+Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
+    double meas_x = meas_package.raw_measurements_(0);
+    double meas_y = meas_package.raw_measurements_(1);
+
+    double meas_longitudinal_velocity = 0; // NOT MEASURED
+    double meas_theta = std::tan(meas_y / meas_x);
+    double meas_ang_acc = 0; // NOT MEASURED
+
+    Eigen::VectorXd measured_state = Eigen::VectorXd(5);
+    measured_state << meas_x, meas_y, meas_longitudinal_velocity, meas_theta, meas_ang_acc;
+    return measured_state;
+}
+
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /**
    * TODO: Complete this function! Use lidar data to update the belief 
@@ -93,6 +113,27 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
    * covariance, P_.
    * You can also calculate the lidar NIS, if desired.
    */
+    Eigen::VectorXd measured_state = LidarMeasurementFunction(meas_package);
+
+    if (is_initialized_) {
+
+    } else {
+        x_ << measured_state;
+    }
+}
+
+Eigen::VectorXd UKF::RadarMeasurementFunction(MeasurementPackage meas_package) {
+    double meas_longitudinal_distance = meas_package.raw_measurements_(0);
+    double meas_theta = meas_package.raw_measurements_(1);
+    double meas_longitudinal_velocity = meas_package.raw_measurements_(2);
+
+    double meas_x = std::cos(meas_theta) * meas_longitudinal_distance;
+    double meas_y = std::sin(meas_theta) * meas_longitudinal_distance;
+    double meas_ang_acc = 0; // NOT MEASURED
+
+    Eigen::VectorXd measured_state = Eigen::VectorXd(5);
+    measured_state << meas_x, meas_y, meas_longitudinal_velocity, meas_theta, meas_ang_acc;
+    return measured_state;
 }
 
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
@@ -102,4 +143,11 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    * covariance, P_.
    * You can also calculate the radar NIS, if desired.
    */
+  Eigen::VectorXd measured_state = RadarMeasurementFunction(meas_package);
+
+  if (is_initialized_) {
+
+  } else {
+      x_ << measured_state;
+  }
 }

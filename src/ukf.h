@@ -95,6 +95,12 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+private:
+    long long timestamp_;  // Most recently processed timestamp
+
+    Eigen::VectorXd RadarMeasurementFunction(MeasurementPackage meas_package);
+    Eigen::VectorXd LidarMeasurementFunction(MeasurementPackage meas_package);
 };
 
 #endif  // UKF_H
