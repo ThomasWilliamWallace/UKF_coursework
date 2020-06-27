@@ -97,12 +97,12 @@ Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
     double meas_x = meas_package.raw_measurements_(0);
     double meas_y = meas_package.raw_measurements_(1);
 
-    double meas_longitudinal_velocity = 0; // NOT MEASURED
-    double meas_theta = std::tan(meas_y / meas_x);
+    double meas_forward_velocity = 0; // NOT MEASURED
+    double meas_theta = 0;  // NOT MEASURED
     double meas_ang_acc = 0; // NOT MEASURED
 
     Eigen::VectorXd measured_state = Eigen::VectorXd(5);
-    measured_state << meas_x, meas_y, meas_longitudinal_velocity, meas_theta, meas_ang_acc;
+    measured_state << meas_x, meas_y, meas_forward_velocity, meas_theta, meas_ang_acc;
     return measured_state;
 }
 
@@ -124,15 +124,17 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
 Eigen::VectorXd UKF::RadarMeasurementFunction(MeasurementPackage meas_package) {
     double meas_longitudinal_distance = meas_package.raw_measurements_(0);
-    double meas_theta = meas_package.raw_measurements_(1);
+    double meas_positional_theta = meas_package.raw_measurements_(1);
     double meas_longitudinal_velocity = meas_package.raw_measurements_(2);
 
-    double meas_x = std::cos(meas_theta) * meas_longitudinal_distance;
-    double meas_y = std::sin(meas_theta) * meas_longitudinal_distance;
-    double meas_ang_acc = 0; // NOT MEASURED
+    double meas_x = std::cos(meas_positional_theta) * meas_longitudinal_distance;
+    double meas_y = std::sin(meas_positional_theta) * meas_longitudinal_distance;
+    double meas_forward_velocity = 0;  // NOT MEASURED
+    double meas_theta = 0;  // NOT MEASURED
+    double meas_ang_acc = 0;  // NOT MEASURED
 
     Eigen::VectorXd measured_state = Eigen::VectorXd(5);
-    measured_state << meas_x, meas_y, meas_longitudinal_velocity, meas_theta, meas_ang_acc;
+    measured_state << meas_x, meas_y, meas_forward_velocity, meas_theta, meas_ang_acc;
     return measured_state;
 }
 
