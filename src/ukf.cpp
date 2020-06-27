@@ -105,7 +105,7 @@ void UKF::Prediction(double delta_t) {
    MatrixXd sqrt_matrix = P_aug_.llt().matrixL();
    MatrixXd sigma_diff = std::sqrt(lambda_ + n_aug_) * sqrt_matrix;
 
-   // Generate sigma points
+    // Generate sigma points
     sigma_points_.col(0) = x_aug_;
     for (int sigma = 0; sigma < n_aug_; sigma++) {
         sigma_points_.col(1 + sigma) = x_aug_ + sigma_diff.col(sigma);
@@ -114,9 +114,10 @@ void UKF::Prediction(double delta_t) {
         sigma_points_.col(1 + n_aug_ + sigma) = x_aug_ - sigma_diff.col(sigma);
     }
 
-   // Apply process model to sigma points
+    // Apply process model to sigma points
 
-   // Calculate mean and covariance of sigma points
+
+    // Calculate mean and covariance of sigma points
 }
 
 Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
