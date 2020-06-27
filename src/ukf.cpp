@@ -1,6 +1,7 @@
 #include "ukf.h"
 #include "Eigen/Dense"
 #include <cmath>
+#include <iostream>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -72,6 +73,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    * TODO: Complete this function! Make sure you switch between lidar and radar
    * measurements.
    */
+  //  std::cout << "UKF::ProcessMeasurement, x_=" << x_ << "\n";
 
 }
 
@@ -81,6 +83,7 @@ void UKF::Prediction(double delta_t) {
    * Modify the state vector, x_. Predict sigma points, the state, 
    * and the state covariance matrix.
    */
+   std::cout << "UKF::Prediction, x_=" << x_ << "\n";
 }
 
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
