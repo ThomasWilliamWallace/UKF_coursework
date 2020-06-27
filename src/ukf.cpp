@@ -81,7 +81,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    * measurements.
    */
   //  std::cout << "UKF::ProcessMeasurement, x_=" << x_ << "\n";
-  Prediction((meas_package.timestamp_ - timestamp_) / 1000000);
+  Prediction((meas_package.timestamp_ - timestamp_) / 1000000.0);
   if (meas_package.sensor_type_ == meas_package.LASER) {
       UpdateLidar(meas_package);
   } else {
@@ -308,6 +308,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
     } else {
         x_ << measured_state;
+//        x_(2) = 5;
 //        P_ << ;
     }
 }
@@ -344,6 +345,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   } else {
       x_ << measured_state;
+//      x_(2) = 5;
 //      P_ << 0;
   }
 }
