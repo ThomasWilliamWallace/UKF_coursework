@@ -103,6 +103,8 @@ public:
 		car1.render(viewer);
 		car2.render(viewer);
 		car3.render(viewer);
+
+        delete lidar;
 	}
 	
 	void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl::visualization::PCLVisualizer::Ptr& viewer)
