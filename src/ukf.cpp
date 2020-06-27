@@ -28,6 +28,8 @@ UKF::UKF() {
   P_ = MatrixXd::Identity(n_x_, n_x_);
   P_aug_ = MatrixXd::Zero(n_aug_, n_aug_);
 
+  Xsig_pred_ = MatrixXd::Zero(n_x_, n_sigma_);
+
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 3;
 
@@ -79,7 +81,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    * measurements.
    */
   //  std::cout << "UKF::ProcessMeasurement, x_=" << x_ << "\n";
-  Prediction(meas_package.timestamp_ - timestamp_);
+  Prediction((meas_package.timestamp_ - timestamp_) / 1000000);
   if (meas_package.sensor_type_ == meas_package.LASER) {
       UpdateLidar(meas_package);
   } else {
@@ -113,11 +115,11 @@ void UKF::Prediction(double delta_t) {
    * Modify the state vector, x_. Predict sigma points, the state, 
    * and the state covariance matrix.
    */
-    std::cout << "UKF::Prediction\n";
-    std::cout << "x_=" << x_ << "\n";
+    std::cout << "\nUKF::Prediction\n";
     if (!is_initialized_) {
         return;
     }
+    std::cout << "x_=" << x_ << "\n";
 //    std::cout << "weights_=\n" << weights_ << "\n";
 
     int x_index = 0;
@@ -134,10 +136,10 @@ void UKF::Prediction(double delta_t) {
     P_aug_(mu_theta_acc_acc_index, mu_theta_acc_acc_index) = std_yawdd_ * std_yawdd_;
     MatrixXd sqrt_matrix = P_aug_.llt().matrixL();
     MatrixXd sigma_diff = std::sqrt(lambda_ + n_aug_) * sqrt_matrix;
-//    std::cout << "x_aug_=\n" << x_aug_ << "\n";
-//    std::cout << "P_aug_=\n" << P_aug_ << "\n";
-//    std::cout << "sqrt_matrix=\n" << sqrt_matrix << "\n";
-//    std::cout << "sigma_diff=\n" << sigma_diff << "\n";
+    std::cout << "x_aug_=\n" << x_aug_ << "\n";
+    std::cout << "P_aug_=\n" << P_aug_ << "\n";
+    std::cout << "sqrt_matrix=\n" << sqrt_matrix << "\n";
+    std::cout << "sigma_diff=\n" << sigma_diff << "\n";
 
     // Generate sigma points
     sigma_points_.col(0) = x_aug_;
@@ -149,9 +151,17 @@ void UKF::Prediction(double delta_t) {
         sigma_points_.col(1 + n_aug_ + sigma) = x_aug_ - sigma_diff.col(sigma);
         sigma_points_(theta_index, sigma) = NormaliseAngle(sigma_points_(theta_index, sigma));
     }
-//    std::cout << "sigma_points_=\n" << sigma_points_ << "\n";
+    std::cout << "sigma_points_=\n" << sigma_points_ << "\n";
 
-    MatrixXd sigma_points_pred = MatrixXd(n_x_, n_sigma_);
+    std::stringstream ss;
+    std::string str_sigma_points;
+    ss << sigma_points_;
+    str_sigma_points = ss.str();
+    ss.str("");
+    std::string str_P;
+    std::string str_x;
+    std::string str_Xsig_pred;
+    Xsig_pred_.fill(0);
     double delta_t2 = delta_t * delta_t;
     // Apply process model to sigma points
     for (int sigma = 0; sigma < sigma_points_.cols(); sigma++) {
@@ -170,45 +180,103 @@ void UKF::Prediction(double delta_t) {
             angular_acceleration_is_zero = false;
         }
         if (angular_acceleration_is_zero) {
-            sigma_points_pred(x_index, sigma) = x + delta_t * velocity * std::cos(theta) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
+            Xsig_pred_(x_index, sigma) = x + delta_t * velocity * std::cos(theta) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
         } else {
-            sigma_points_pred(x_index, sigma) = x + (velocity / theta_acc) * (std::sin(theta + theta_acc * delta_t) - std::sin(theta)) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
+            Xsig_pred_(x_index, sigma) = x + (velocity / theta_acc) * (std::sin(theta + theta_acc * delta_t) - std::sin(theta)) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
         }
+        ss << Xsig_pred_;
+        str_Xsig_pred = ss.str();
+        ss.str("");
         if (angular_acceleration_is_zero) {
-            sigma_points_pred(y_index, sigma) = y + delta_t * velocity * std::sin(theta) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
+            Xsig_pred_(y_index, sigma) = y + delta_t * velocity * std::sin(theta) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
         } else {
-            sigma_points_pred(y_index, sigma) = y + (velocity / theta_acc) * (-std::cos(theta + theta_acc * delta_t) + std::cos(theta)) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
+            Xsig_pred_(y_index, sigma) = y + (velocity / theta_acc) * (-std::cos(theta + theta_acc * delta_t) + std::cos(theta)) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
         }
-        sigma_points_pred(velocity_index, sigma) = velocity + delta_t * mu_acc;
-        sigma_points_pred(theta_index, sigma) = NormaliseAngle(theta + delta_t * theta_acc + delta_t2 * mu_theta_acc_acc / 2.0);
-        sigma_points_pred(theta_acc_index, sigma) = theta_acc + delta_t * mu_theta_acc_acc;
+        ss << Xsig_pred_;
+        str_Xsig_pred = ss.str();
+        ss.str("");
+        Xsig_pred_(velocity_index, sigma) = velocity + delta_t * mu_acc;
+        ss << Xsig_pred_;
+        str_Xsig_pred = ss.str();
+        ss.str("");
+        Xsig_pred_(theta_index, sigma) = NormaliseAngle(theta + delta_t * theta_acc + delta_t2 * mu_theta_acc_acc / 2.0);
+        ss << Xsig_pred_;
+        str_Xsig_pred = ss.str();
+        ss.str("");
+        Xsig_pred_(theta_acc_index, sigma) = theta_acc + delta_t * mu_theta_acc_acc;
+        ss << Xsig_pred_;
+        str_Xsig_pred = ss.str();
+        ss.str("");
     }
-//    std::cout << "sigma_points_pred=\n" << sigma_points_pred << "\n";
+    ss << P_;
+    str_P = ss.str();
+    ss.str("");
+    ss << x_;
+    str_x = ss.str();
+    ss.str("");
+    ss << Xsig_pred_;
+    str_Xsig_pred = ss.str();
+    ss.str("");
+    std::cout << "Xsig_pred_=\n" << Xsig_pred_ << "\n";
 
     // Calculate sigma point mean
     x_.fill(0);
-    double mean_theta = sigma_points_pred(theta_index, 0   );
+    double mean_theta = Xsig_pred_(theta_index, 0   );
     // Centering the sigma centre point theta on 0, to allow averaging.
-    sigma_points_pred.row(theta_index) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+    Xsig_pred_.row(theta_index) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
     for (int state_index = 0; state_index < n_x_; state_index++) {
         for (int sig_index = 0; sig_index < n_sigma_; sig_index++) {
-            x_(state_index) += sigma_points_pred(state_index, sig_index) * weights_(sig_index);
+            x_(state_index) += Xsig_pred_(state_index, sig_index) * weights_(sig_index);
         }
     }
     // Shifting the sigma point back to it's original value.
-    sigma_points_pred.row(theta_index) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+    Xsig_pred_.row(theta_index) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
     x_.row(theta_index) += mean_theta * Eigen::VectorXd::Ones(1).transpose();
 
     x_(theta_index) = NormaliseAngle(x_(theta_index));
-//    std::cout << "x_=\n" << x_ << "\n";
+    std::cout << "x_=\n" << x_ << "\n";
 
     // Calculate sigma point covariance
     P_.fill(0.0);
+    std::string str_Xsig_pred_col;
+    std::string str_weight;
+    std::string str_diff;
+    std::string str_diff_squared;
+    std::string str_contribution;
     for (int sig_index = 0; sig_index < n_sigma_; sig_index++) {
-        VectorXd difference = sigma_points_pred.col(sig_index) - x_;
+        ss << P_;
+        str_P = ss.str();
+        ss.str("");
+        ss << x_;
+        str_x = ss.str();
+        ss.str("");
+        ss << Xsig_pred_;
+        str_Xsig_pred = ss.str();
+        ss.str("");
+        ss << Xsig_pred_.col(sig_index);
+        str_Xsig_pred_col = ss.str();
+        ss.str("");
+        std::stringstream ss_weight;
+        ss_weight << weights_(sig_index);
+        str_weight = ss_weight.str();
+        VectorXd difference = Xsig_pred_.col(sig_index) - x_;
+        std::stringstream ss_diff;
+        ss_diff << difference;
+        str_diff = ss_diff.str();
+        MatrixXd diff_squared = difference * difference.transpose();
+        std::stringstream ss_diff_squared;
+        ss_diff_squared << diff_squared;
+        str_diff_squared = ss_diff_squared.str();
+        MatrixXd contribution = diff_squared * weights_(sig_index);
+        std::stringstream ss_contribution;
+        ss_contribution << contribution;
+        str_contribution = ss_contribution.str();
         P_ += difference * difference.transpose() * weights_(sig_index);
+        ss.str("");
+        ss << P_;
+        str_P = ss.str();
     }
-//    std::cout << "P_=\n" << P_ << "\n";
+    std::cout << "P_=\n" << P_ << "\n";
 }
 
 Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
