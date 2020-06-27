@@ -221,19 +221,49 @@ void UKF::Prediction(double delta_t) {
 
     // Calculate sigma point mean
     x_.fill(0);
+    ss << x_;
+    str_x = ss.str();
+    ss.str("");
     double mean_theta = Xsig_pred_(theta_index, 0   );
     // Centering the sigma centre point theta on 0, to allow averaging.
     Xsig_pred_.row(theta_index) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+    ss << Xsig_pred_;
+    str_Xsig_pred = ss.str();
+    ss.str("");
+    for (int sigma = 0; sigma < n_sigma_; sigma++) {
+        Xsig_pred_(theta_index, sigma) = NormaliseAngle(Xsig_pred_(theta_index, sigma));
+    }
+    ss << Xsig_pred_;
+    str_Xsig_pred = ss.str();
+    ss.str("");
     for (int state_index = 0; state_index < n_x_; state_index++) {
         for (int sig_index = 0; sig_index < n_sigma_; sig_index++) {
             x_(state_index) += Xsig_pred_(state_index, sig_index) * weights_(sig_index);
+            ss << x_;
+            str_x = ss.str();
+            ss.str("");
         }
     }
     // Shifting the sigma point back to it's original value.
     Xsig_pred_.row(theta_index) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+    ss << Xsig_pred_;
+    str_Xsig_pred = ss.str();
+    ss.str("");
+    for (int sigma = 0; sigma < n_sigma_; sigma++) {
+        Xsig_pred_(theta_index, sigma) = NormaliseAngle(Xsig_pred_(theta_index, sigma));
+    }
+    ss << Xsig_pred_;
+    str_Xsig_pred = ss.str();
+    ss.str("");
     x_.row(theta_index) += mean_theta * Eigen::VectorXd::Ones(1).transpose();
+    ss << x_;
+    str_x = ss.str();
+    ss.str("");
 
     x_(theta_index) = NormaliseAngle(x_(theta_index));
+    ss << x_;
+    str_x = ss.str();
+    ss.str("");
     std::cout << "x_=\n" << x_ << "\n";
 
     // Calculate sigma point covariance
@@ -308,7 +338,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
     } else {
         x_ << measured_state;
-//        x_(2) = 5;
+        x_(2) = 10;
+        x_(3) = M_PI/2;
+        x_(4) = M_PI/5;
 //        P_ << ;
     }
 }
@@ -345,7 +377,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   } else {
       x_ << measured_state;
-//      x_(2) = 5;
+      x_(2) = 10;
+      x_(3) = M_PI/2;
+      x_(4) = M_PI/5;
 //      P_ << 0;
   }
 }
