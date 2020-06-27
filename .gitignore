@@ -71,3 +71,10 @@
 /build/CMakeFiles/ukf_highway.dir/src/ukf.cpp.o
 /build/ukf_highway
 /.idea/vcs.xml
+/cmake-build-debug/CMakeFiles/ukf_highway.dir/CXX.includecache
+/cmake-build-debug/CMakeFiles/ukf_highway.dir/depend.internal
+/cmake-build-debug/CMakeFiles/ukf_highway.dir/src/main.cpp.o
+/cmake-build-debug/CMakeFiles/ukf_highway.dir/src/render/render.cpp.o
+/cmake-build-debug/CMakeFiles/ukf_highway.dir/src/tools.cpp.o
+/cmake-build-debug/CMakeFiles/ukf_highway.dir/src/ukf.cpp.o
+/cmake-build-debug/ukf_highway
