@@ -62,11 +62,6 @@ void TestZeroDurationPredict() {
 void TestStraightLineConstantVelocity() {
     UKF ukf;
 
-    int x_index = 0;
-    int y_index = 1;
-    int velocity_index = 2;
-    int theta_acc_index = 4;
-
     // Feed in first measurement
     MeasurementPackage meas_package;
     meas_package.sensor_type_ = MeasurementPackage::LASER;
@@ -76,11 +71,11 @@ void TestStraightLineConstantVelocity() {
     ukf.ProcessMeasurement(meas_package);
 
     // Set ukf theta_acc to zero so we are travelling in a straight line
-    ukf.x_(theta_acc_index) = 0;
+    ukf.x_(UKF_index::theta_acc) = 0;
 
     // Set ukf velocity to 5.81 m/s
     double target_velocity = 5.81;
-    ukf.x_(velocity_index) = target_velocity;
+    ukf.x_(UKF_index::velocity) = target_velocity;
 
     std::vector<int> delta_t_list = {1, 200, 168, 50, 50000};
     int total_t = 0;
@@ -89,13 +84,13 @@ void TestStraightLineConstantVelocity() {
     }
     double total_distance = 0;
 
-    double prev_x_position = ukf.x_(x_index);
-    double prev_y_position = ukf.x_(y_index);
+    double prev_x_position = ukf.x_(UKF_index::x);
+    double prev_y_position = ukf.x_(UKF_index::y);
 
     for (auto& delta_t : delta_t_list) {
         ukf.Prediction(delta_t);
-        double x_diff = ukf.x_(x_index) - prev_x_position;
-        double y_diff = ukf.x_(y_index) - prev_y_position;
+        double x_diff = ukf.x_(UKF_index::x) - prev_x_position;
+        double y_diff = ukf.x_(UKF_index::y) - prev_y_position;
         double distance = std::sqrt(x_diff * x_diff + y_diff * y_diff);
         total_distance += distance;
         double current_velocity = distance / delta_t;
@@ -103,8 +98,8 @@ void TestStraightLineConstantVelocity() {
         bool velocityMatchedTarget = (current_velocity - target_velocity) < 1e10;
         assert(("Velocity matches the target velocity.", velocityMatchedTarget));
 
-        prev_x_position = ukf.x_(x_index);
-        prev_y_position = ukf.x_(y_index);
+        prev_x_position = ukf.x_(UKF_index::x);
+        prev_y_position = ukf.x_(UKF_index::y);
     }
 
     bool averageVelocityMatchedTarget = ((total_distance/total_t) - target_velocity) < 1e10;
@@ -117,12 +112,6 @@ void TestStraightLineConstantVelocity() {
 void TestConstantTurningRate() {
     UKF ukf;
 
-    int x_index = 0;
-    int y_index = 1;
-    int velocity_index = 2;
-    int theta_index = 3;
-    int theta_acc_index = 4;
-
     // Feed in first measurement
     MeasurementPackage meas_package;
     meas_package.sensor_type_ = MeasurementPackage::LASER;
@@ -133,22 +122,22 @@ void TestConstantTurningRate() {
 
     // Set ukf theta_acc to target angular acceleration so we are turning at a constant rate
     double target_yaw_rate = M_PI/2.9107;
-    ukf.x_(theta_acc_index) = target_yaw_rate;
+    ukf.x_(UKF_index::theta_acc) = target_yaw_rate;
 
     // Set ukf velocity to constant, non-zero rate
-    ukf.x_(velocity_index) = -9.273;
+    ukf.x_(UKF_index::velocity) = -9.273;
 
     std::vector<int> delta_t_list = {1, 286, 12, 77977, 4541};
 
-    double prev_theta = ukf.x_(theta_index);
+    double prev_theta = ukf.x_(UKF_index::theta);
 
     for (auto& delta_t : delta_t_list) {
         ukf.Prediction(delta_t);
 
-        bool thetaMatchesTarget = (NormaliseAngle(ukf.x_(theta_index)) - NormaliseAngle(prev_theta + target_yaw_rate*delta_t)) < 1e10;
+        bool thetaMatchesTarget = (NormaliseAngle(ukf.x_(UKF_index::theta)) - NormaliseAngle(prev_theta + target_yaw_rate*delta_t)) < 1e10;
         assert(("Theta matches expected theta from constant yaw rate.", thetaMatchesTarget));
 
-        prev_theta = ukf.x_(theta_index);
+        prev_theta = ukf.x_(UKF_index::theta);
     }
 
     std::cout << "TestStraightLineConstantVelocity Completed\n";
