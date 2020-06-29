@@ -81,7 +81,7 @@ void TestStraightLineConstantVelocity() {
     for (int i = 0; i < delta_t_list.size(); i++) {
         delta_t_list[i] = delta_t_list[i] / 1000000.0;
     }
-    int total_t = 0;
+    double total_t = 0;
     for (auto& delta_t : delta_t_list) {
         total_t += delta_t;
     }
