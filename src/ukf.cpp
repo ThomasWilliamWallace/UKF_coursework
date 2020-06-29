@@ -115,11 +115,11 @@ void UKF::Prediction(double delta_t) {
      * Modify the state vector, x_. Predict sigma points, the state,
      * and the state covariance matrix.
      */
-    std::cout << "\nUKF::Prediction\n";
+//    std::cout << "\nUKF::Prediction\n";
     if (!is_initialized_) {
         return;
     }
-    std::cout << "x_=" << x_ << "\n";
+//    std::cout << "x_=" << x_ << "\n";
 //    std::cout << "weights_=\n" << weights_ << "\n";
 
     int x_index = 0;
@@ -136,10 +136,10 @@ void UKF::Prediction(double delta_t) {
     P_aug_(mu_theta_acc_acc_index, mu_theta_acc_acc_index) = std_yawdd_ * std_yawdd_;
     MatrixXd sqrt_matrix = P_aug_.llt().matrixL();
     MatrixXd sigma_diff = std::sqrt(lambda_ + n_aug_) * sqrt_matrix;
-    std::cout << "x_aug_=\n" << x_aug_ << "\n";
-    std::cout << "P_aug_=\n" << P_aug_ << "\n";
-    std::cout << "sqrt_matrix=\n" << sqrt_matrix << "\n";
-    std::cout << "sigma_diff=\n" << sigma_diff << "\n";
+//    std::cout << "x_aug_=\n" << x_aug_ << "\n";
+//    std::cout << "P_aug_=\n" << P_aug_ << "\n";
+//    std::cout << "sqrt_matrix=\n" << sqrt_matrix << "\n";
+//    std::cout << "sigma_diff=\n" << sigma_diff << "\n";
 
     // Generate sigma points
     sigma_points_.col(0) = x_aug_;
@@ -151,7 +151,7 @@ void UKF::Prediction(double delta_t) {
         sigma_points_.col(1 + n_aug_ + sigma) = x_aug_ - sigma_diff.col(sigma);
         sigma_points_(theta_index, sigma) = NormaliseAngle(sigma_points_(theta_index, sigma));
     }
-    std::cout << "sigma_points_=\n" << sigma_points_ << "\n";
+//    std::cout << "sigma_points_=\n" << sigma_points_ << "\n";
 
     std::stringstream ss;
     std::string str_sigma_points;
@@ -217,7 +217,7 @@ void UKF::Prediction(double delta_t) {
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
-    std::cout << "Xsig_pred_=\n" << Xsig_pred_ << "\n";
+//    std::cout << "Xsig_pred_=\n" << Xsig_pred_ << "\n";
 
     // Calculate sigma point mean
     x_.fill(0);
@@ -264,7 +264,7 @@ void UKF::Prediction(double delta_t) {
     ss << x_;
     str_x = ss.str();
     ss.str("");
-    std::cout << "x_=\n" << x_ << "\n";
+//    std::cout << "x_=\n" << x_ << "\n";
 
     // Calculate sigma point covariance
     P_.fill(0.0);
@@ -306,7 +306,7 @@ void UKF::Prediction(double delta_t) {
         ss << P_;
         str_P = ss.str();
     }
-    std::cout << "P_=\n" << P_ << "\n";
+//    std::cout << "P_=\n" << P_ << "\n";
 }
 
 Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
