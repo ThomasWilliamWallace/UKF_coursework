@@ -174,7 +174,7 @@ void UKF::Prediction(double delta_t) {
         float mu_acc = sigma_points_(mu_acc_index, sigma);
         float mu_theta_acc_acc = sigma_points_(mu_theta_acc_acc_index, sigma);
 
-        if (theta_acc < 1e-6) {
+        if (abs(theta_acc) < 1e-6) {
             angular_acceleration_is_zero = true;
         } else {
             angular_acceleration_is_zero = false;
