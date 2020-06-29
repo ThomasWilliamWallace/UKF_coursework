@@ -140,7 +140,7 @@ void TestConstantTurningRate() {
         prev_theta = ukf.x_(UKF_index::theta);
     }
 
-    std::cout << "TestStraightLineConstantVelocity Completed\n";
+    std::cout << "TestConstantTurningRate Completed\n";
 };
 
 void RunAllTests() {
