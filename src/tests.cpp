@@ -7,10 +7,12 @@
 #include "Eigen/Dense"
 #include "ukf.h"
 #include <cassert>
+#include <cmath>
+#include <vector>
 
 
 // Checks that UKF state is unchanged by a prediction of zero duration.
-bool ZeroDurationPredict() {
+void TestZeroDurationPredict() {
     UKF ukf;
 
     // Feed in first measurement
@@ -52,13 +54,62 @@ bool ZeroDurationPredict() {
 
     P_mean_changed = P_diff.isMuchSmallerThan(1e10);
     assert(("Mean covariance matrix unchanged between first and second zero-duration predict step.", P_mean_changed));
+};
 
-    return false;
+
+// Checks that UKF predicted velocity is constant if we're travelling in a straight line.
+void TestStraightLineConstantVelocity() {
+    UKF ukf;
+
+    // Feed in first measurement
+    MeasurementPackage meas_package;
+    meas_package.sensor_type_ = MeasurementPackage::LASER;
+    meas_package.raw_measurements_ = Eigen::VectorXd(2);
+    meas_package.raw_measurements_ << -9.6649140872479418, 3.9175380731566825;
+    meas_package.timestamp_ = 0;
+    ukf.ProcessMeasurement(meas_package);
+
+    // Set ukf theta_acc to zero so we are travelling in a straight line
+    ukf.x_(4) = 0;
+
+    // Set ukf velocity to 5.81 m/s
+    double target_velocity = 5.81;
+    ukf.x_(2) = target_velocity;
+
+    std::vector<int> delta_t_list = {1, 200, 168, 50, 50000};
+    int total_t = 0;
+    for (auto& delta_t : delta_t_list) {
+        total_t += delta_t;
+    }
+    double total_distance = 0;
+
+    int delta_t;
+    double prev_x_position = ukf.x_(0);
+    double prev_y_position = ukf.x_(1);
+
+    for (auto& delta_t : delta_t_list) {
+        ukf.Prediction(delta_t);
+        double x_diff = ukf.x_(0) - prev_x_position;
+        double y_diff = ukf.x_(1) - prev_y_position;
+        double distance = std::sqrt(x_diff * x_diff + y_diff * y_diff);
+        total_distance += distance;
+        double current_velocity = distance / delta_t;
+
+        bool velocityMatchedTarget = (current_velocity - target_velocity) < 1e10;
+        assert(("Velocity matches the target velocity.", velocityMatchedTarget));
+
+        prev_x_position = ukf.x_(0);
+        prev_y_position = ukf.x_(1);
+    }
+
+    bool averageVelocityMatchedTarget = ((total_distance/total_t) - target_velocity) < 1e10;
+    assert(("Average velocity across the whole distance matches the target velocity.", averageVelocityMatchedTarget));
 };
 
 void RunAllTests() {
     std::cout << "Running all tests\n";
-    ZeroDurationPredict();
+    TestZeroDurationPredict();
+    TestStraightLineConstantVelocity();
 };
 
 int main(int argc, char** argv) {
