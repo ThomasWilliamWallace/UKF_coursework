@@ -109,3 +109,4 @@
 /cmake-build-debug/CMakeFiles/test_ukf.dir/src/ukf.cpp.o
 /x_hist.txt
 /x_hist_analysis.ods
+/sensor-fusion-ekf-reference.pdf
