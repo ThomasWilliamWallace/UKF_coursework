@@ -4,6 +4,9 @@
 #include "Eigen/Dense"
 #include "measurement_package.h"
 
+
+double NormaliseAngle(double angle);
+
 class UKF {
  public:
   /**
