@@ -89,9 +89,8 @@ void TestStraightLineConstantVelocity() {
     }
     double total_distance = 0;
 
-    int delta_t;
-    double prev_x_position = ukf.x_(0);
-    double prev_y_position = ukf.x_(1);
+    double prev_x_position = ukf.x_(x_index);
+    double prev_y_position = ukf.x_(y_index);
 
     for (auto& delta_t : delta_t_list) {
         ukf.Prediction(delta_t);
@@ -113,10 +112,53 @@ void TestStraightLineConstantVelocity() {
     std::cout << "TestStraightLineConstantVelocity Completed\n";
 };
 
+
+// Checks that UKF predicted yaw rate is actually constant when the theta_acc model parameter is constant.
+void TestConstantTurningRate() {
+    UKF ukf;
+
+    int x_index = 0;
+    int y_index = 1;
+    int velocity_index = 2;
+    int theta_index = 3;
+    int theta_acc_index = 4;
+
+    // Feed in first measurement
+    MeasurementPackage meas_package;
+    meas_package.sensor_type_ = MeasurementPackage::LASER;
+    meas_package.raw_measurements_ = Eigen::VectorXd(2);
+    meas_package.raw_measurements_ << -9.6649140872479418, 3.9175380731566825;
+    meas_package.timestamp_ = 0;
+    ukf.ProcessMeasurement(meas_package);
+
+    // Set ukf theta_acc to target angular acceleration so we are turning at a constant rate
+    double target_yaw_rate = M_PI/2.9107;
+    ukf.x_(theta_acc_index) = target_yaw_rate;
+
+    // Set ukf velocity to constant, non-zero rate
+    ukf.x_(velocity_index) = -9.273;
+
+    std::vector<int> delta_t_list = {1, 286, 12, 77977, 4541};
+
+    double prev_theta = ukf.x_(theta_index);
+
+    for (auto& delta_t : delta_t_list) {
+        ukf.Prediction(delta_t);
+
+        bool thetaMatchesTarget = (NormaliseAngle(ukf.x_(theta_index)) - NormaliseAngle(prev_theta + target_yaw_rate*delta_t)) < 1e10;
+        assert(("Theta matches expected theta from constant yaw rate.", thetaMatchesTarget));
+
+        prev_theta = ukf.x_(theta_index);
+    }
+
+    std::cout << "TestStraightLineConstantVelocity Completed\n";
+};
+
 void RunAllTests() {
     std::cout << "Running all tests\n";
     TestZeroDurationPredict();
     TestStraightLineConstantVelocity();
+    TestConstantTurningRate();
     std::cout << "All tests Completed\n";
 };
 
