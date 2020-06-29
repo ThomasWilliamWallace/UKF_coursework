@@ -30,6 +30,12 @@ lmarker Tools::lidarSense(Car& car, pcl::visualization::PCLVisualizer::Ptr& view
     meas_package.raw_measurements_ << marker.x, marker.y;
     meas_package.timestamp_ = timestamp;
 
+    std::stringstream ss;
+    std::string str_meas_values;
+    ss << meas_package.raw_measurements_;
+    str_meas_values = ss.str();
+    ss.str("");
+
     car.ukf.ProcessMeasurement(meas_package);
 
     return marker;
