@@ -98,6 +98,12 @@ void TestStraightLineConstantVelocity() {
         bool velocityMatchedTarget = (current_velocity - target_velocity) < 1e10;
         assert(("Velocity matches the target velocity.", velocityMatchedTarget));
 
+        bool yVelocityMatchedTarget = (ukf.x_(UKF_index::y) / delta_t - target_velocity) < 1e10;
+        assert(("Y Velocity matches the target velocity.", yVelocityMatchedTarget));
+
+        bool xVelocityIsZero = (ukf.x_(UKF_index::x) / delta_t) < 1e10;
+        assert(("X Velocity is zero.", xVelocityIsZero));
+
         prev_x_position = ukf.x_(UKF_index::x);
         prev_y_position = ukf.x_(UKF_index::y);
     }
