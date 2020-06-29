@@ -77,7 +77,10 @@ void TestStraightLineConstantVelocity() {
     double target_velocity = 5.81;
     ukf.x_(UKF_index::velocity) = target_velocity;
 
-    std::vector<int> delta_t_list = {1, 168, 50000};
+    std::vector<double> delta_t_list = {1, 168, 50000};
+    for (int i = 0; i < delta_t_list.size(); i++) {
+        delta_t_list[i] = delta_t_list[i] / 1000000.0;
+    }
     int total_t = 0;
     for (auto& delta_t : delta_t_list) {
         total_t += delta_t;
@@ -88,7 +91,7 @@ void TestStraightLineConstantVelocity() {
     double prev_y_position = ukf.x_(UKF_index::y);
 
     for (auto& delta_t : delta_t_list) {
-        ukf.Prediction(delta_t);
+        ukf.Prediction(std::round(delta_t * 1000000));
         double x_diff = ukf.x_(UKF_index::x) - prev_x_position;
         double y_diff = ukf.x_(UKF_index::y) - prev_y_position;
         double distance = std::sqrt(x_diff * x_diff + y_diff * y_diff);
@@ -133,12 +136,15 @@ void TestConstantTurningRate() {
     // Set ukf velocity to constant, non-zero rate
     ukf.x_(UKF_index::velocity) = -9.273;
 
-    std::vector<int> delta_t_list = {1, 286, 77977};
+    std::vector<double> delta_t_list = {1, 286, 77977};
+    for (int i = 0; i < delta_t_list.size(); i++) {
+        delta_t_list[i] = delta_t_list[i] / 1000000.0;
+    }
 
     double prev_theta = ukf.x_(UKF_index::theta);
 
     for (auto& delta_t : delta_t_list) {
-        ukf.Prediction(delta_t);
+        ukf.Prediction(std::round(delta_t * 1000000));
 
         bool thetaMatchesTarget = abs(NormaliseAngle(ukf.x_(UKF_index::theta)) - NormaliseAngle(prev_theta + target_yaw_rate*delta_t)) < 1e10;
         assert(("Theta matches expected theta from constant yaw rate.", thetaMatchesTarget));
