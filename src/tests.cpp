@@ -77,7 +77,7 @@ void TestStraightLineConstantVelocity() {
     double target_velocity = 5.81;
     ukf.x_(UKF_index::velocity) = target_velocity;
 
-    std::vector<int> delta_t_list = {1, 200, 168, 50, 50000};
+    std::vector<int> delta_t_list = {1, 168, 50000};
     int total_t = 0;
     for (auto& delta_t : delta_t_list) {
         total_t += delta_t;
@@ -127,7 +127,7 @@ void TestConstantTurningRate() {
     // Set ukf velocity to constant, non-zero rate
     ukf.x_(UKF_index::velocity) = -9.273;
 
-    std::vector<int> delta_t_list = {1, 286, 12, 77977, 4541};
+    std::vector<int> delta_t_list = {1, 286, 77977};
 
     double prev_theta = ukf.x_(UKF_index::theta);
 
