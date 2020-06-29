@@ -122,18 +122,10 @@ void UKF::Prediction(double delta_t) {
 //    std::cout << "x_=" << x_ << "\n";
 //    std::cout << "weights_=\n" << weights_ << "\n";
 
-    int x_index = 0;
-    int y_index = 1;
-    int velocity_index = 2;
-    int theta_index = 3;
-    int theta_acc_index = 4;
-    int mu_acc_index = 5;
-    int mu_theta_acc_acc_index = 6;
-
     x_aug_ << x_, 0, 0;
     P_aug_.block(0, 0, n_x_, n_x_) = P_;
-    P_aug_(mu_acc_index, mu_acc_index) = std_a_ * std_a_;
-    P_aug_(mu_theta_acc_acc_index, mu_theta_acc_acc_index) = std_yawdd_ * std_yawdd_;
+    P_aug_(UKF_index::mu_acc, UKF_index::mu_acc) = std_a_ * std_a_;
+    P_aug_(UKF_index::mu_theta_acc_acc, UKF_index::mu_theta_acc_acc) = std_yawdd_ * std_yawdd_;
     MatrixXd sqrt_matrix = P_aug_.llt().matrixL();
     MatrixXd sigma_diff = std::sqrt(lambda_ + n_aug_) * sqrt_matrix;
 //    std::cout << "x_aug_=\n" << x_aug_ << "\n";
@@ -145,11 +137,11 @@ void UKF::Prediction(double delta_t) {
     sigma_points_.col(0) = x_aug_;
     for (int sigma = 0; sigma < n_aug_; sigma++) {
         sigma_points_.col(1 + sigma) = x_aug_ + sigma_diff.col(sigma);
-        sigma_points_(theta_index, sigma) = NormaliseAngle(sigma_points_(theta_index, sigma));
+        sigma_points_(UKF_index::theta, sigma) = NormaliseAngle(sigma_points_(UKF_index::theta, sigma));
     }
     for (int sigma = 0; sigma < n_aug_; sigma++) {
         sigma_points_.col(1 + n_aug_ + sigma) = x_aug_ - sigma_diff.col(sigma);
-        sigma_points_(theta_index, sigma) = NormaliseAngle(sigma_points_(theta_index, sigma));
+        sigma_points_(UKF_index::theta, sigma) = NormaliseAngle(sigma_points_(UKF_index::theta, sigma));
     }
 //    std::cout << "sigma_points_=\n" << sigma_points_ << "\n";
 
@@ -166,13 +158,13 @@ void UKF::Prediction(double delta_t) {
     // Apply process model to sigma points
     for (int sigma = 0; sigma < sigma_points_.cols(); sigma++) {
         bool angular_acceleration_is_zero;
-        float x = sigma_points_(x_index, sigma);
-        float y = sigma_points_(y_index, sigma);
-        float velocity = sigma_points_(velocity_index, sigma);
-        float theta = sigma_points_(theta_index, sigma);
-        float theta_acc = sigma_points_(theta_acc_index, sigma);
-        float mu_acc = sigma_points_(mu_acc_index, sigma);
-        float mu_theta_acc_acc = sigma_points_(mu_theta_acc_acc_index, sigma);
+        float x = sigma_points_(UKF_index::x, sigma);
+        float y = sigma_points_(UKF_index::y, sigma);
+        float velocity = sigma_points_(UKF_index::velocity, sigma);
+        float theta = sigma_points_(UKF_index::theta, sigma);
+        float theta_acc = sigma_points_(UKF_index::theta_acc, sigma);
+        float mu_acc = sigma_points_(UKF_index::mu_acc, sigma);
+        float mu_theta_acc_acc = sigma_points_(UKF_index::mu_theta_acc_acc, sigma);
 
         if (abs(theta_acc) < 1e-6) {
             angular_acceleration_is_zero = true;
@@ -180,30 +172,30 @@ void UKF::Prediction(double delta_t) {
             angular_acceleration_is_zero = false;
         }
         if (angular_acceleration_is_zero) {
-            Xsig_pred_(x_index, sigma) = x + delta_t * velocity * std::cos(theta) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
+            Xsig_pred_(UKF_index::x, sigma) = x + delta_t * velocity * std::cos(theta) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
         } else {
-            Xsig_pred_(x_index, sigma) = x + (velocity / theta_acc) * (std::sin(theta + theta_acc * delta_t) - std::sin(theta)) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
+            Xsig_pred_(UKF_index::x, sigma) = x + (velocity / theta_acc) * (std::sin(theta + theta_acc * delta_t) - std::sin(theta)) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
         }
         ss << Xsig_pred_;
         str_Xsig_pred = ss.str();
         ss.str("");
         if (angular_acceleration_is_zero) {
-            Xsig_pred_(y_index, sigma) = y + delta_t * velocity * std::sin(theta) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
+            Xsig_pred_(UKF_index::y, sigma) = y + delta_t * velocity * std::sin(theta) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
         } else {
-            Xsig_pred_(y_index, sigma) = y + (velocity / theta_acc) * (-std::cos(theta + theta_acc * delta_t) + std::cos(theta)) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
+            Xsig_pred_(UKF_index::y, sigma) = y + (velocity / theta_acc) * (-std::cos(theta + theta_acc * delta_t) + std::cos(theta)) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
         }
         ss << Xsig_pred_;
         str_Xsig_pred = ss.str();
         ss.str("");
-        Xsig_pred_(velocity_index, sigma) = velocity + delta_t * mu_acc;
+        Xsig_pred_(UKF_index::velocity, sigma) = velocity + delta_t * mu_acc;
         ss << Xsig_pred_;
         str_Xsig_pred = ss.str();
         ss.str("");
-        Xsig_pred_(theta_index, sigma) = NormaliseAngle(theta + delta_t * theta_acc + delta_t2 * mu_theta_acc_acc / 2.0);
+        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(theta + delta_t * theta_acc + delta_t2 * mu_theta_acc_acc / 2.0);
         ss << Xsig_pred_;
         str_Xsig_pred = ss.str();
         ss.str("");
-        Xsig_pred_(theta_acc_index, sigma) = theta_acc + delta_t * mu_theta_acc_acc;
+        Xsig_pred_(UKF_index::theta_acc, sigma) = theta_acc + delta_t * mu_theta_acc_acc;
         ss << Xsig_pred_;
         str_Xsig_pred = ss.str();
         ss.str("");
@@ -224,14 +216,14 @@ void UKF::Prediction(double delta_t) {
     ss << x_;
     str_x = ss.str();
     ss.str("");
-    double mean_theta = Xsig_pred_(theta_index, 0   );
+    double mean_theta = Xsig_pred_(UKF_index::theta, 0   );
     // Centering the sigma centre point theta on 0, to allow averaging.
-    Xsig_pred_.row(theta_index) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+    Xsig_pred_.row(UKF_index::theta) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
     for (int sigma = 0; sigma < n_sigma_; sigma++) {
-        Xsig_pred_(theta_index, sigma) = NormaliseAngle(Xsig_pred_(theta_index, sigma));
+        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_(UKF_index::theta, sigma));
     }
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
@@ -245,22 +237,22 @@ void UKF::Prediction(double delta_t) {
         }
     }
     // Shifting the sigma point back to it's original value.
-    Xsig_pred_.row(theta_index) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+    Xsig_pred_.row(UKF_index::theta) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
     for (int sigma = 0; sigma < n_sigma_; sigma++) {
-        Xsig_pred_(theta_index, sigma) = NormaliseAngle(Xsig_pred_(theta_index, sigma));
+        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_(UKF_index::theta, sigma));
     }
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
-    x_.row(theta_index) += mean_theta * Eigen::VectorXd::Ones(1).transpose();
+    x_.row(UKF_index::theta) += mean_theta * Eigen::VectorXd::Ones(1).transpose();
     ss << x_;
     str_x = ss.str();
     ss.str("");
 
-    x_(theta_index) = NormaliseAngle(x_(theta_index));
+    x_(UKF_index::theta) = NormaliseAngle(x_(UKF_index::theta));
     ss << x_;
     str_x = ss.str();
     ss.str("");

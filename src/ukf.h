@@ -7,6 +7,16 @@
 
 double NormaliseAngle(double angle);
 
+namespace UKF_index {
+    constexpr int x = 0;
+    constexpr int y = 1;
+    constexpr int velocity = 2;
+    constexpr int theta = 3;
+    constexpr int theta_acc = 4;
+    constexpr int mu_acc = 5;
+    constexpr int mu_theta_acc_acc = 6;
+}
+
 class UKF {
  public:
   /**
