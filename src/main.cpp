@@ -4,6 +4,8 @@
 
 //#include "render/render.h"
 #include "highway.h"
+#include <iostream>
+#include <fstream>
 
 int main(int argc, char** argv)
 {
@@ -38,5 +40,16 @@ int main(int argc, char** argv)
 		time_us = 1000000*frame_count/frame_per_sec;
 		
 	}
+
+	std::vector<Eigen::VectorXd>& x_hist = highway.traffic[0].ukf.x_history;
+    ofstream x_hist_file;
+    x_hist_file.open("/home/thomas/Documents/udacity_exercises/SFND_Unscented_Kalman_Filter/x_hist.txt");
+    for (Eigen::VectorXd& x : x_hist) {
+        for (int i = 0; i < x.size(); i++) {
+            x_hist_file << x(i) << "\t";
+        }
+        x_hist_file << "\n";
+    }
+    x_hist_file.close();
 
 }

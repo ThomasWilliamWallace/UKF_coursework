@@ -116,6 +116,7 @@ void UKF::Prediction(double delta_t) {
      * and the state covariance matrix.
      */
 //    std::cout << "\nUKF::Prediction\n";
+    x_history.push_back(x_);
     if (!is_initialized_) {
         return;
     }
@@ -332,7 +333,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
         x_ << measured_state;
         x_(2) = 10;
         x_(3) = M_PI/2;
-        x_(4) = M_PI/5;
+//        x_(4) = M_PI/5;
 //        P_ << ;
     }
 }
@@ -371,7 +372,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         x_ << measured_state;
         x_(2) = 10;
       x_(3) = M_PI/2;
-      x_(4) = M_PI/5;
+//      x_(4) = M_PI/5;
 //      P_ << 0;
     }
 }
