@@ -54,12 +54,18 @@ void TestZeroDurationPredict() {
 
     P_mean_changed = P_diff.isMuchSmallerThan(1e10);
     assert(("Mean covariance matrix unchanged between first and second zero-duration predict step.", P_mean_changed));
+    std::cout << "TestZeroDurationPredict Completed\n";
 };
 
 
 // Checks that UKF predicted velocity is constant if we're travelling in a straight line.
 void TestStraightLineConstantVelocity() {
     UKF ukf;
+
+    int x_index = 0;
+    int y_index = 1;
+    int velocity_index = 2;
+    int theta_acc_index = 4;
 
     // Feed in first measurement
     MeasurementPackage meas_package;
@@ -70,11 +76,11 @@ void TestStraightLineConstantVelocity() {
     ukf.ProcessMeasurement(meas_package);
 
     // Set ukf theta_acc to zero so we are travelling in a straight line
-    ukf.x_(4) = 0;
+    ukf.x_(theta_acc_index) = 0;
 
     // Set ukf velocity to 5.81 m/s
     double target_velocity = 5.81;
-    ukf.x_(2) = target_velocity;
+    ukf.x_(velocity_index) = target_velocity;
 
     std::vector<int> delta_t_list = {1, 200, 168, 50, 50000};
     int total_t = 0;
@@ -89,8 +95,8 @@ void TestStraightLineConstantVelocity() {
 
     for (auto& delta_t : delta_t_list) {
         ukf.Prediction(delta_t);
-        double x_diff = ukf.x_(0) - prev_x_position;
-        double y_diff = ukf.x_(1) - prev_y_position;
+        double x_diff = ukf.x_(x_index) - prev_x_position;
+        double y_diff = ukf.x_(y_index) - prev_y_position;
         double distance = std::sqrt(x_diff * x_diff + y_diff * y_diff);
         total_distance += distance;
         double current_velocity = distance / delta_t;
@@ -98,18 +104,20 @@ void TestStraightLineConstantVelocity() {
         bool velocityMatchedTarget = (current_velocity - target_velocity) < 1e10;
         assert(("Velocity matches the target velocity.", velocityMatchedTarget));
 
-        prev_x_position = ukf.x_(0);
-        prev_y_position = ukf.x_(1);
+        prev_x_position = ukf.x_(x_index);
+        prev_y_position = ukf.x_(y_index);
     }
 
     bool averageVelocityMatchedTarget = ((total_distance/total_t) - target_velocity) < 1e10;
     assert(("Average velocity across the whole distance matches the target velocity.", averageVelocityMatchedTarget));
+    std::cout << "TestStraightLineConstantVelocity Completed\n";
 };
 
 void RunAllTests() {
     std::cout << "Running all tests\n";
     TestZeroDurationPredict();
     TestStraightLineConstantVelocity();
+    std::cout << "All tests Completed\n";
 };
 
 int main(int argc, char** argv) {
