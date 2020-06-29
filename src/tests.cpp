@@ -32,11 +32,13 @@ void TestZeroDurationPredict() {
 
     Eigen::VectorXd x_diff = x_prev - ukf.x_;
     Eigen::MatrixXd P_diff = P_prev - ukf.P_;
+    std::cout << "x_diff=\n" << x_diff << "\n";
+    std::cout << "P_diff=\n" << P_diff << "\n";
 
-    bool x_mean_changed = x_diff.isMuchSmallerThan(1e-7);
+    bool x_mean_changed = x_diff.isZero(1e-7);
     assert(("Mean state unchanged between initialization and zero-duration predict step.", x_mean_changed));
 
-    bool P_mean_changed = P_diff.isMuchSmallerThan(1e-7);
+    bool P_mean_changed = P_diff.isZero(1e-7);
     assert(("Mean covariance matrix unchanged between initialization and zero-duration predict step.", P_mean_changed));
 
     // Store UKF state
@@ -49,10 +51,10 @@ void TestZeroDurationPredict() {
     x_diff = x_prev - ukf.x_;
     P_diff = P_prev - ukf.P_;
 
-    x_mean_changed = x_diff.isMuchSmallerThan(1e-10);
+    x_mean_changed = x_diff.isZero(1e-10);
     assert(("Mean state unchanged between first and second zero-duration predict step.", x_mean_changed));
 
-    P_mean_changed = P_diff.isMuchSmallerThan(1e-10);
+    P_mean_changed = P_diff.isZero(1e-10);
     assert(("Mean covariance matrix unchanged between first and second zero-duration predict step.", P_mean_changed));
     std::cout << "TestZeroDurationPredict Completed\n";
 };
