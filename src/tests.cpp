@@ -33,10 +33,10 @@ void TestZeroDurationPredict() {
     Eigen::VectorXd x_diff = x_prev - ukf.x_;
     Eigen::MatrixXd P_diff = P_prev - ukf.P_;
 
-    bool x_mean_changed = x_diff.isMuchSmallerThan(1e7);
+    bool x_mean_changed = x_diff.isMuchSmallerThan(1e-7);
     assert(("Mean state unchanged between initialization and zero-duration predict step.", x_mean_changed));
 
-    bool P_mean_changed = P_diff.isMuchSmallerThan(1e7);
+    bool P_mean_changed = P_diff.isMuchSmallerThan(1e-7);
     assert(("Mean covariance matrix unchanged between initialization and zero-duration predict step.", P_mean_changed));
 
     // Store UKF state
@@ -49,10 +49,10 @@ void TestZeroDurationPredict() {
     x_diff = x_prev - ukf.x_;
     P_diff = P_prev - ukf.P_;
 
-    x_mean_changed = x_diff.isMuchSmallerThan(1e10);
+    x_mean_changed = x_diff.isMuchSmallerThan(1e-10);
     assert(("Mean state unchanged between first and second zero-duration predict step.", x_mean_changed));
 
-    P_mean_changed = P_diff.isMuchSmallerThan(1e10);
+    P_mean_changed = P_diff.isMuchSmallerThan(1e-10);
     assert(("Mean covariance matrix unchanged between first and second zero-duration predict step.", P_mean_changed));
     std::cout << "TestZeroDurationPredict Completed\n";
 };
@@ -98,20 +98,20 @@ void TestStraightLineConstantVelocity() {
         total_distance += distance;
         double current_velocity = distance / delta_t;
 
-        bool velocityMatchedTarget = abs(current_velocity - target_velocity) < 1e10;
+        bool velocityMatchedTarget = abs(current_velocity - target_velocity) < 1e-10;
         assert(("Velocity matches the target velocity.", velocityMatchedTarget));
 
-        bool yVelocityMatchedTarget = abs(ukf.x_(UKF_index::y) / delta_t - target_velocity) < 1e10;
+        bool yVelocityMatchedTarget = abs(ukf.x_(UKF_index::y) / delta_t - target_velocity) < 1e-10;
         assert(("Y Velocity matches the target velocity.", yVelocityMatchedTarget));
 
-        bool xVelocityIsZero = abs(ukf.x_(UKF_index::x) / delta_t) < 1e10;
+        bool xVelocityIsZero = abs(ukf.x_(UKF_index::x) / delta_t) < 1e-10;
         assert(("X Velocity is zero.", xVelocityIsZero));
 
         prev_x_position = ukf.x_(UKF_index::x);
         prev_y_position = ukf.x_(UKF_index::y);
     }
 
-    bool averageVelocityMatchedTarget = abs((total_distance/total_t) - target_velocity) < 1e10;
+    bool averageVelocityMatchedTarget = abs((total_distance/total_t) - target_velocity) < 1e-10;
     assert(("Average velocity across the whole distance matches the target velocity.", averageVelocityMatchedTarget));
     std::cout << "TestStraightLineConstantVelocity Completed\n";
 };
@@ -146,7 +146,7 @@ void TestConstantTurningRate() {
     for (auto& delta_t : delta_t_list) {
         ukf.Prediction(std::round(delta_t * 1000000));
 
-        bool thetaMatchesTarget = abs(NormaliseAngle(ukf.x_(UKF_index::theta)) - NormaliseAngle(prev_theta + target_yaw_rate*delta_t)) < 1e10;
+        bool thetaMatchesTarget = abs(NormaliseAngle(ukf.x_(UKF_index::theta)) - NormaliseAngle(prev_theta + target_yaw_rate*delta_t)) < 1e-10;
         assert(("Theta matches expected theta from constant yaw rate.", thetaMatchesTarget));
 
         prev_theta = ukf.x_(UKF_index::theta);
