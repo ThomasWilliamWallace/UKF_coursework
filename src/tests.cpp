@@ -84,12 +84,8 @@ void TestStraightLineConstantVelocity() {
     // Set ukf theta_acc to zero so we are travelling in a straight line
     ukf.x_(UKF_index::theta_acc) = 0;
 
-    std::vector<double> delta_t_int_list = {1, 168, 50000};
-    std::vector<double> delta_t_list;
-    for (auto delta_t_int : delta_t_int_list) {
-        delta_t_list.push_back(delta_t_int * 1e-6);
-    }
-    double total_t = 0;
+    std::vector<double> delta_t_list = {1, 168, 50000};
+    int total_t = 0;
     for (auto& delta_t : delta_t_list) {
         total_t += delta_t;
     }
@@ -99,8 +95,8 @@ void TestStraightLineConstantVelocity() {
     double prev_y_position = ukf.x_(UKF_index::y);
 
     for (int i = 0; i < delta_t_list.size(); i++) {
-        double delta_t = delta_t_int_list[i];  // INT or divide-by-a-million double???
-        ukf.Prediction(delta_t_int_list[i]);
+        int delta_t = delta_t_list[i];
+        ukf.Prediction(delta_t_list[i]);
         double x_diff = ukf.x_(UKF_index::x) - prev_x_position;
         double y_diff = ukf.x_(UKF_index::y) - prev_y_position;
         double distance = std::sqrt(x_diff * x_diff + y_diff * y_diff);
@@ -122,7 +118,7 @@ void TestStraightLineConstantVelocity() {
         prev_y_position = ukf.x_(UKF_index::y);
     }
 
-    double average_velocity = total_distance / (total_t * 1e6);
+    double average_velocity = total_distance / total_t;
     bool averageVelocityMatchedTarget = abs(average_velocity - target_velocity) < 1e-7;
     assert(("Average velocity across the whole distance matches the target velocity.", averageVelocityMatchedTarget));
     std::cout << "TestStraightLineConstantVelocity Completed\n";
@@ -154,20 +150,15 @@ void TestConstantTurningRate() {
     // Set ukf velocity to constant, non-zero rate
     ukf.x_(UKF_index::velocity) = -9.273;
 
-    std::vector<double> delta_t_int_list = {1, 286, 77977};
-    std::vector<double> delta_t_list;
-    for (auto delta_t_int : delta_t_int_list) {
-        delta_t_list.push_back(delta_t_int * 1e-6);
-    }
-
+    std::vector<double> delta_t_list = {1, 286, 77977};
     double prev_theta = ukf.x_(UKF_index::theta);
 
     for (int i = 0; i < delta_t_list.size(); i++) {
         double delta_t = delta_t_list[i];
-        ukf.Prediction(delta_t_int_list[i]);
+        ukf.Prediction(delta_t_list[i]);
 
         double normalisedTheta = NormaliseAngle(ukf.x_(UKF_index::theta));
-        double normalisedThetaTarget = NormaliseAngle(prev_theta + target_yaw_rate*delta_t*1e6);
+        double normalisedThetaTarget = NormaliseAngle(prev_theta + target_yaw_rate * delta_t);
         bool thetaMatchesTarget = abs(normalisedTheta - normalisedThetaTarget) < 1e-2;
         assert(("Theta matches expected theta from constant yaw rate.", thetaMatchesTarget));
 
