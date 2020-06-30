@@ -19,6 +19,8 @@ UKF::UKF() {
     n_x_ = 5;
     n_aug_ = 7;
     n_sigma_ = 1 + 2 * n_aug_;
+    n_z_radar_ = 3;
+    n_z_lidar_ = 2;
 
     // initial state vector
     x_ = VectorXd::Zero(n_x_);
@@ -334,7 +336,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
         x_(2) = 10;
         x_(3) = M_PI/2;
 //        x_(4) = M_PI/5;
-//        P_ << ;
+        P_ *= 1e-6;
     }
 }
 
@@ -364,9 +366,88 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     Eigen::VectorXd measured_state = RadarMeasurementFunction(meas_package);
 
     if (is_initialized_) {
+        std::stringstream ss;
         // Apply measurement model to sigma points
+        Eigen::MatrixXd z_sig = Eigen::MatrixXd(n_z_radar_, n_sigma_);
+        for (int sigma = 0; sigma < n_sigma_; sigma++) {
+            double x = Xsig_pred_(UKF_index::x, sigma);
+            double y = Xsig_pred_(UKF_index::y, sigma);
+            double theta = Xsig_pred_(UKF_index::theta, sigma);
+            double velocity = Xsig_pred_(UKF_index::velocity, sigma);
+            double longitudinal_distance = std::sqrt(x * x + y * y);
+            double angle_of_view = std::atan(y / x);
+            double longitudinal_velocity = (x * std::cos(theta) * velocity + y * std::sin(theta) * velocity) / longitudinal_distance;
+            z_sig(0, sigma) = longitudinal_distance;
+            z_sig(1, sigma) = angle_of_view;
+            z_sig(2, sigma) = longitudinal_velocity;
+        }
+        ss << z_sig;
+        std::string str_z_sig = ss.str();
+        ss.str("");
 
         // Calculate mean and covariance from sigma points
+        // TODO center angle on the sigma mean
+        Eigen::VectorXd z_mean = Eigen::VectorXd::Zero(n_z_radar_);
+        for (int sigma = 0; sigma < n_sigma_; sigma++) {
+            for (int row = 0; row < z_mean.size(); row++) {
+                z_mean(row) += z_sig(row, sigma) * weights_(sigma);
+            }
+        }
+        z_mean(1) = NormaliseAngle(z_mean(1));
+        // TODO uncenter angle from the sigma mean
+        ss << z_mean;
+        std::string str_z_mean = ss.str();
+        ss.str("");
+
+        MatrixXd R = MatrixXd::Zero(n_z_radar_, n_z_radar_);
+        R(0, 0) = std_radr_ * std_radr_;
+        R(1, 1) = std_radphi_ * std_radphi_;
+        R(2, 2) = std_radrd_ * std_radrd_;
+        ss << R;
+        std::string str_R = ss.str();
+        ss.str("");
+
+        MatrixXd S = MatrixXd::Zero(n_z_radar_, n_z_radar_);
+        S += R;
+        for (int sigma = 0; sigma < n_sigma_; sigma++) {
+            Eigen::VectorXd difference = z_sig.col(sigma) - z_mean;
+            S += difference * difference.transpose() * weights_(sigma);
+        }
+        ss << S;
+        std::string str_S = ss.str();
+        ss.str("");
+
+        // UKF update (can be shared with lidar)
+        Eigen::MatrixXd Tc = Eigen::MatrixXd::Zero(n_x_, n_z_radar_);
+        for (int sigma = 0; sigma < n_sigma_; sigma++) {
+            VectorXd x_diff = Xsig_pred_.col(sigma) - x_;
+            x_diff(3) = NormaliseAngle(x_diff(3));
+            VectorXd z_diff = z_sig.col(sigma) - z_mean;
+            z_diff(1) = NormaliseAngle(z_diff(1));
+            Tc = Tc + weights_(sigma) * x_diff * z_diff.transpose();
+        }
+        ss << Tc;
+        std::string str_Tc = ss.str();
+        ss.str("");
+
+        // calculate Kalman gain K;
+        MatrixXd K;
+        K = Tc * S.inverse();
+        ss << K;
+        std::string str_K = ss.str();
+        ss.str("");
+
+        // update state mean and covariance matrix
+        VectorXd z_diff = meas_package.raw_measurements_ - z_mean;
+        z_diff(1) = NormaliseAngle(z_diff(1));
+
+        ss << K * z_diff;
+        std::string str_k_z_diff = ss.str();
+        x_ = x_ + K * z_diff;
+        x_(UKF_index::theta) = NormaliseAngle(x_(UKF_index::theta));
+        P_ = P_ - K * S * K.transpose();
+    std::cout << "x_=\n" << x_ << "\n";
+    std::cout << "P_=\n" << P_ << "\n";
 
     } else {
         x_ << measured_state;
@@ -374,5 +455,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
       x_(3) = M_PI/2;
 //      x_(4) = M_PI/5;
 //      P_ << 0;
+        P_ *= 1e-6;
     }
 }
