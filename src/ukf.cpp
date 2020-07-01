@@ -122,9 +122,11 @@ void UKF::Prediction(double delta_t) {
     if (!is_initialized_) {
         return;
     }
+    std::cout << "Prediction Update\n";
 //    std::cout << "x_=" << x_ << "\n";
 //    std::cout << "weights_=\n" << weights_ << "\n";
 
+    Eigen::VectorXd old_x = x_;
     x_aug_ << x_, 0, 0;
     P_aug_.block(0, 0, n_x_, n_x_) = P_;
     P_aug_(UKF_index::mu_acc, UKF_index::mu_acc) = std_a_ * std_a_;
@@ -225,9 +227,9 @@ void UKF::Prediction(double delta_t) {
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
-    for (int sigma = 0; sigma < n_sigma_; sigma++) {
-        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_(UKF_index::theta, sigma));
-    }
+//    for (int sigma = 0; sigma < n_sigma_; sigma++) {
+//        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_(UKF_index::theta, sigma));
+//    }
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
@@ -300,8 +302,26 @@ void UKF::Prediction(double delta_t) {
         ss.str("");
         ss << P_;
         str_P = ss.str();
+        ss.str("");
     }
-//    std::cout << "P_=\n" << P_ << "\n";
+
+    // Get rid of any negative / tiny covariance values
+    for (int i = 0; i < P_.rows(); i++) {
+        for (int j = 0; j < P_.cols(); j++) {
+            if (P_(i, j) < 1e-6) {
+                P_(i, j) = 1e-6;
+            }
+        }
+    }
+    std::cout << "x_=\n" << x_ << "\n";
+    std::cout << "P_=\n" << P_ << "\n";
+    double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
+    delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
+    if (abs(delta_theta) > 0.6) {
+        ss << old_x;
+        std::string str_old_x = ss.str();
+        ss.str("");
+    }
 }
 
 Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
@@ -366,7 +386,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     Eigen::VectorXd measured_state = RadarMeasurementFunction(meas_package);
 
     if (is_initialized_) {
+        std::cout << "Radar Measurement Update\n";
         std::stringstream ss;
+        Eigen::VectorXd old_x = x_;
         // Apply measurement model to sigma points
         Eigen::MatrixXd z_sig = Eigen::MatrixXd(n_z_radar_, n_sigma_);
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
@@ -386,7 +408,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         ss.str("");
 
         // Calculate mean and covariance from sigma points
-        // TODO center angle on the sigma mean
+        // center angle on the sigma mean
+        double mean_theta = z_sig(1, 0  );
+        z_sig.row(1) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
         Eigen::VectorXd z_mean = Eigen::VectorXd::Zero(n_z_radar_);
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
             for (int row = 0; row < z_mean.size(); row++) {
@@ -394,7 +418,10 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             }
         }
         z_mean(1) = NormaliseAngle(z_mean(1));
-        // TODO uncenter angle from the sigma mean
+        // uncenter angle from the sigma mean
+        z_sig.row(1) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+        z_mean(1) += mean_theta;
+        z_mean(1) = NormaliseAngle(z_mean(1));
         ss << z_mean;
         std::string str_z_mean = ss.str();
         ss.str("");
@@ -431,6 +458,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         ss.str("");
 
         // calculate Kalman gain K;
+        ss << S.inverse();
+        std::string str_S_inverse = ss.str();
+        ss.str("");
         MatrixXd K;
         K = Tc * S.inverse();
         ss << K;
@@ -438,16 +468,48 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         ss.str("");
 
         // update state mean and covariance matrix
+        ss << meas_package.raw_measurements_;
+        std::string str_meas = ss.str();
+        ss.str("");
         VectorXd z_diff = meas_package.raw_measurements_ - z_mean;
+        ss << z_diff;
+        std::string str_z_diff = ss.str();
+        ss.str("");
         z_diff(1) = NormaliseAngle(z_diff(1));
+        ss << z_diff;
+        std::string str_z_diff_normalised = ss.str();
+        ss.str("");
 
         ss << K * z_diff;
         std::string str_k_z_diff = ss.str();
+        ss.str("");
         x_ = x_ + K * z_diff;
+        ss << x_;
+        std::string str_x = ss.str();
+        ss.str("");
         x_(UKF_index::theta) = NormaliseAngle(x_(UKF_index::theta));
+        ss << x_;
+        std::string str_x_normalised = ss.str();
+        ss.str("");
+        double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
+        delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
+        if (abs(delta_theta) > 2.6) {
+            ss << old_x;
+            std::string str_old_x = ss.str();
+            ss.str("");
+        }
         P_ = P_ - K * S * K.transpose();
-    std::cout << "x_=\n" << x_ << "\n";
-    std::cout << "P_=\n" << P_ << "\n";
+
+        // Get rid of any negative / tiny covariance values
+        for (int i = 0; i < P_.rows(); i++) {
+            for (int j = 0; j < P_.cols(); j++) {
+                if (P_(i, j) < 1e-6) {
+                    P_(i, j) = 1e-6;
+                }
+            }
+        }
+        std::cout << "x_=\n" << x_ << "\n";
+        std::cout << "P_=\n" << P_ << "\n";
 
     } else {
         x_ << measured_state;
