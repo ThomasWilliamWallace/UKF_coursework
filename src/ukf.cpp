@@ -83,7 +83,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
      * measurements.
      */
     //  std::cout << "UKF::ProcessMeasurement, x_=" << x_ << "\n";
-    Prediction((meas_package.timestamp_ - timestamp_) / 1000000.0);
+//    if (!is_initialized_ || abs(meas_package.timestamp_ - timestamp_) > 0) {
+        Prediction((meas_package.timestamp_ - timestamp_) / 1000000.0);
+//    }
     if (meas_package.sensor_type_ == meas_package.LASER) {
         UpdateLidar(meas_package);
     } else {
@@ -227,9 +229,9 @@ void UKF::Prediction(double delta_t) {
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
-//    for (int sigma = 0; sigma < n_sigma_; sigma++) {
-//        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_(UKF_index::theta, sigma));
-//    }
+    for (int sigma = 0; sigma < n_sigma_; sigma++) {
+        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_(UKF_index::theta, sigma));
+    }
     ss << Xsig_pred_;
     str_Xsig_pred = ss.str();
     ss.str("");
@@ -277,9 +279,6 @@ void UKF::Prediction(double delta_t) {
         ss << x_;
         str_x = ss.str();
         ss.str("");
-        ss << Xsig_pred_;
-        str_Xsig_pred = ss.str();
-        ss.str("");
         ss << Xsig_pred_.col(sig_index);
         str_Xsig_pred_col = ss.str();
         ss.str("");
@@ -317,7 +316,7 @@ void UKF::Prediction(double delta_t) {
     std::cout << "P_=\n" << P_ << "\n";
     double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
     delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
-    if (abs(delta_theta) > 0.6) {
+    if (abs(delta_theta) > 1.6) {
         ss << old_x;
         std::string str_old_x = ss.str();
         ss.str("");
@@ -394,10 +393,10 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
             double x = Xsig_pred_(UKF_index::x, sigma);
             double y = Xsig_pred_(UKF_index::y, sigma);
-            double theta = Xsig_pred_(UKF_index::theta, sigma);
             double velocity = Xsig_pred_(UKF_index::velocity, sigma);
+            double theta = Xsig_pred_(UKF_index::theta, sigma);
             double longitudinal_distance = std::sqrt(x * x + y * y);
-            double angle_of_view = std::atan(y / x);
+            double angle_of_view = std::atan2(y, x);
             double longitudinal_velocity = (x * std::cos(theta) * velocity + y * std::sin(theta) * velocity) / longitudinal_distance;
             z_sig(0, sigma) = longitudinal_distance;
             z_sig(1, sigma) = angle_of_view;
@@ -411,6 +410,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         // center angle on the sigma mean
         double mean_theta = z_sig(1, 0  );
         z_sig.row(1) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+        for (int sigma = 0; sigma < n_sigma_; sigma++) {
+            z_sig(1, sigma) = NormaliseAngle(z_sig(1, sigma));
+        }
         Eigen::VectorXd z_mean = Eigen::VectorXd::Zero(n_z_radar_);
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
             for (int row = 0; row < z_mean.size(); row++) {
@@ -493,7 +495,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         ss.str("");
         double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
         delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
-        if (abs(delta_theta) > 2.6) {
+        if (abs(delta_theta) > 1.6) {
             ss << old_x;
             std::string str_old_x = ss.str();
             ss.str("");
