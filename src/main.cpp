@@ -30,6 +30,10 @@ int main(int argc, char** argv)
 
 	while (frame_count < (frame_per_sec*sec_interval))
 	{
+	    std::cout << "frame_count=" << frame_count << "\n";
+	    if (frame_count == 99) {
+	        std::cout << "Stopping\n";
+	    }
 		viewer->removeAllPointClouds();
 		viewer->removeAllShapes();
 
