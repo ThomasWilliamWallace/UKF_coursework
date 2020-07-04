@@ -125,6 +125,8 @@ private:
 
     Eigen::VectorXd RadarMeasurementFunction(MeasurementPackage meas_package);
     Eigen::VectorXd LidarMeasurementFunction(MeasurementPackage meas_package);
+
+    void EnsureCovarianceIsPositiveDefinite();
 };
 
 #endif  // UKF_H
