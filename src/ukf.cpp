@@ -350,14 +350,14 @@ void UKF::Prediction(double delta_t) {
 }
 
 Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
-    double meas_x = meas_package.raw_measurements_(0);
-    double meas_y = meas_package.raw_measurements_(1);
+    double meas_x = meas_package.raw_measurements_(Lidar_index::x);
+    double meas_y = meas_package.raw_measurements_(Lidar_index::y);
 
     double meas_forward_velocity = 0; // NOT MEASURED
     double meas_theta = 0;  // NOT MEASURED
     double meas_ang_acc = 0; // NOT MEASURED
 
-    Eigen::VectorXd measured_state = Eigen::VectorXd(5);
+    Eigen::VectorXd measured_state = Eigen::VectorXd(n_x_);
     measured_state << meas_x, meas_y, meas_forward_velocity, meas_theta, meas_ang_acc;
     return measured_state;
 }
@@ -380,8 +380,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
             double x = Xsig_pred_(UKF_index::x, sigma);
             double y = Xsig_pred_(UKF_index::y, sigma);
-            z_sig(0, sigma) = x;
-            z_sig(1, sigma) = y;
+            z_sig(Lidar_index::x, sigma) = x;
+            z_sig(Lidar_index::y, sigma) = y;
         }
 //        ss << z_sig;
 //        std::string str_z_sig = ss.str();
@@ -399,8 +399,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 //        ss.str("");
 
         MatrixXd R = MatrixXd::Zero(n_z_lidar_, n_z_lidar_);
-        R(0, 0) = std_laspx_ * std_laspx_;
-        R(1, 1) = std_laspy_ * std_laspy_;
+        R(Lidar_index::x, Lidar_index::x) = std_laspx_ * std_laspx_;
+        R(Lidar_index::y, Lidar_index::y) = std_laspy_ * std_laspy_;
 //        ss << R;
 //        std::string str_R = ss.str();
 //        ss.str("");
@@ -435,7 +435,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 //            std::string str_tc_x_diff = ss.str();
 //            std::cout << "str_tc_x_diff=\n" << str_tc_x_diff << "\n";
 //            ss.str("");
-            x_diff(3) = NormaliseAngle(x_diff(3));
+            x_diff(UKF_index::theta) = NormaliseAngle(x_diff(UKF_index::theta));
 //            ss << x_diff;
 //            std::string str_tc_x_diff_normalised = ss.str();
 //            std::cout << "tc_x_diff_normalised=\n" << str_tc_x_diff_normalised << "\n";
@@ -504,17 +504,17 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
     } else {
         x_ << measured_state;
-        x_(2) = 5;
-//        x_(3) = M_PI/2;
-//        x_(4) = M_PI/5;
+        x_(UKF_index::velocity) = 5;
+//        x_(UKF_index::theta) = M_PI/2;
+//      x_(UKF_index::theta_acc) = M_PI/5;
 //        P_ *= 1e-6;
     }
 }
 
 Eigen::VectorXd UKF::RadarMeasurementFunction(MeasurementPackage meas_package) {
-    double meas_longitudinal_distance = meas_package.raw_measurements_(0);
-    double meas_positional_theta = meas_package.raw_measurements_(1);
-    double meas_longitudinal_velocity = meas_package.raw_measurements_(2);
+    double meas_longitudinal_distance = meas_package.raw_measurements_(Radar_index::longitudinal_distance);
+    double meas_positional_theta = meas_package.raw_measurements_(Radar_index::angle_of_view);
+    double meas_longitudinal_velocity = meas_package.raw_measurements_(Radar_index::longitudinal_velocity);
 
     double meas_x = std::cos(meas_positional_theta) * meas_longitudinal_distance;
     double meas_y = std::sin(meas_positional_theta) * meas_longitudinal_distance;
@@ -522,7 +522,7 @@ Eigen::VectorXd UKF::RadarMeasurementFunction(MeasurementPackage meas_package) {
     double meas_theta = 0;  // NOT MEASURED
     double meas_ang_acc = 0;  // NOT MEASURED
 
-    Eigen::VectorXd measured_state = Eigen::VectorXd(5);
+    Eigen::VectorXd measured_state = Eigen::VectorXd(n_x_);
     measured_state << meas_x, meas_y, meas_forward_velocity, meas_theta, meas_ang_acc;
     return measured_state;
 }
@@ -559,9 +559,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             double longitudinal_distance = std::sqrt(x * x + y * y);
             double angle_of_view = std::atan2(y, x);
             double longitudinal_velocity = (x * std::cos(theta) * velocity + y * std::sin(theta) * velocity) / longitudinal_distance;
-            z_sig(0, sigma) = longitudinal_distance;
-            z_sig(1, sigma) = angle_of_view;
-            z_sig(2, sigma) = longitudinal_velocity;
+            z_sig(Radar_index::longitudinal_distance, sigma) = longitudinal_distance;
+            z_sig(Radar_index::angle_of_view, sigma) = angle_of_view;
+            z_sig(Radar_index::longitudinal_velocity, sigma) = longitudinal_velocity;
         }
 //        ss << z_sig;
 //        std::string str_z_sig = ss.str();
@@ -569,10 +569,10 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
         // Calculate mean and covariance from sigma points
         // center angle on the sigma mean
-        double mean_theta = z_sig(1, 0  );
-        z_sig.row(1) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+        double mean_theta = z_sig(Radar_index::angle_of_view, 0  );
+        z_sig.row(Radar_index::angle_of_view) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
-            z_sig(1, sigma) = NormaliseAngle(z_sig(1, sigma));
+            z_sig(Radar_index::angle_of_view, sigma) = NormaliseAngle(z_sig(Radar_index::angle_of_view, sigma));
         }
         Eigen::VectorXd z_mean = Eigen::VectorXd::Zero(n_z_radar_);
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
@@ -580,19 +580,19 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
                 z_mean(row) += z_sig(row, sigma) * weights_(sigma);
             }
         }
-        z_mean(1) = NormaliseAngle(z_mean(1));
+        z_mean(Radar_index::angle_of_view) = NormaliseAngle(z_mean(1));
         // uncenter angle from the sigma mean
-        z_sig.row(1) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
-        z_mean(1) += mean_theta;
-        z_mean(1) = NormaliseAngle(z_mean(1));
+        z_sig.row(Radar_index::angle_of_view) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
+        z_mean(Radar_index::angle_of_view) += mean_theta;
+        z_mean(Radar_index::angle_of_view) = NormaliseAngle(z_mean(Radar_index::angle_of_view));
 //        ss << z_mean;
 //        std::string str_z_mean = ss.str();
 //        ss.str("");
 
         MatrixXd R = MatrixXd::Zero(n_z_radar_, n_z_radar_);
-        R(0, 0) = std_radr_ * std_radr_;
-        R(1, 1) = std_radphi_ * std_radphi_;
-        R(2, 2) = std_radrd_ * std_radrd_;
+        R(Radar_index::longitudinal_distance, Radar_index::longitudinal_distance) = std_radr_ * std_radr_;
+        R(Radar_index::angle_of_view, Radar_index::angle_of_view) = std_radphi_ * std_radphi_;
+        R(Radar_index::longitudinal_velocity, Radar_index::longitudinal_velocity) = std_radrd_ * std_radrd_;
 //        ss << R;
 //        std::string str_R = ss.str();
 //        ss.str("");
@@ -611,9 +611,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         Eigen::MatrixXd Tc = Eigen::MatrixXd::Zero(n_x_, n_z_radar_);
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
             VectorXd x_diff = Xsig_pred_normalised.col(sigma) - x_;
-            x_diff(3) = NormaliseAngle(x_diff(3));
+            x_diff(UKF_index::theta) = NormaliseAngle(x_diff(UKF_index::theta));
             VectorXd z_diff = z_sig.col(sigma) - z_mean;
-            z_diff(1) = NormaliseAngle(z_diff(1));
+            z_diff(Radar_index::angle_of_view) = NormaliseAngle(z_diff(Radar_index::angle_of_view));
             Tc = Tc + weights_(sigma) * x_diff * z_diff.transpose();
         }
 //        ss << Tc;
@@ -638,7 +638,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 //        ss << z_diff;
 //        std::string str_z_diff = ss.str();
 //        ss.str("");
-        z_diff(1) = NormaliseAngle(z_diff(1));
+        z_diff(Radar_index::angle_of_view) = NormaliseAngle(z_diff(Radar_index::angle_of_view));
 //        ss << z_diff;
 //        std::string str_z_diff_normalised = ss.str();
 //        ss.str("");
@@ -670,9 +670,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
     } else {
         x_ << measured_state;
-        x_(2) = 5;
-//        x_(3) = M_PI/2;
-//      x_(4) = M_PI/5;
+        x_(UKF_index::velocity) = 5;
+//        x_(UKF_index::theta) = M_PI/2;
+//      x_(UKF_index::theta_acc) = M_PI/5;
 //      P_ << 0;
 //        P_ *= 1e-6;
     }

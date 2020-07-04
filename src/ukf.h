@@ -8,6 +8,17 @@
 
 double NormaliseAngle(double angle);
 
+namespace Lidar_index {
+    constexpr int x = 0;
+    constexpr int y = 1;
+}
+
+namespace Radar_index {
+    constexpr int longitudinal_distance = 0;
+    constexpr int angle_of_view = 1;
+    constexpr int longitudinal_velocity = 2;
+}
+
 namespace UKF_index {
     constexpr int x = 0;
     constexpr int y = 1;
