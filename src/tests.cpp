@@ -33,8 +33,8 @@ void TestZeroDurationPredict() {
 
     Eigen::VectorXd x_diff = x_prev - ukf.x_;
     Eigen::MatrixXd P_diff = P_prev - ukf.P_;
-//    std::cout << "x_diff=\n" << x_diff << "\n";
-//    std::cout << "P_diff=\n" << P_diff << "\n";
+    std::cout << "x_diff=\n" << x_diff << "\n";
+    std::cout << "P_diff=\n" << P_diff << "\n";
 
     bool x_mean_changed = x_diff.isZero(1e-7);
     assert(("Mean state unchanged between initialization and zero-duration predict step.", x_mean_changed));

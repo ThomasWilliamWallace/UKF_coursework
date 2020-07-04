@@ -334,13 +334,13 @@ void UKF::Prediction(double delta_t) {
     }
 
     // Get rid of any negative / tiny covariance values
-    for (int i = 0; i < P_.rows(); i++) {
-        for (int j = 0; j < P_.cols(); j++) {
-            if (P_(i, j) < 1e-6) {
-                P_(i, j) = 1e-6;
-            }
-        }
-    }
+//    for (int i = 0; i < P_.rows(); i++) {
+//        for (int j = 0; j < P_.cols(); j++) {
+//            if (P_(i, j) < 1e-6) {
+//                P_(i, j) = 1e-6;
+//            }
+//        }
+//    }
     std::cout << "x_=\n" << x_ << "\n";
     std::cout << "P_=\n" << P_ << "\n";
     double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
@@ -501,13 +501,13 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
         P_ = P_ - K * S * K.transpose();
 
         // Get rid of any negative / tiny covariance values
-        for (int i = 0; i < P_.rows(); i++) {
-            for (int j = 0; j < P_.cols(); j++) {
-                if (P_(i, j) < 1e-6) {
-                    P_(i, j) = 1e-6;
-                }
-            }
-        }
+//        for (int i = 0; i < P_.rows(); i++) {
+//            for (int j = 0; j < P_.cols(); j++) {
+//                if (P_(i, j) < 1e-6) {
+//                    P_(i, j) = 1e-6;
+//                }
+//            }
+//        }
         std::cout << "x_=\n" << x_ << "\n";
         std::cout << "P_=\n" << P_ << "\n";
 
@@ -673,13 +673,13 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         P_ = P_ - K * S * K.transpose();
 
         // Get rid of any negative / tiny covariance values
-        for (int i = 0; i < P_.rows(); i++) {
-            for (int j = 0; j < P_.cols(); j++) {
-                if (P_(i, j) < 1e-6) {
-                    P_(i, j) = 1e-6;
-                }
-            }
-        }
+//        for (int i = 0; i < P_.rows(); i++) {
+//            for (int j = 0; j < P_.cols(); j++) {
+//                if (P_(i, j) < 1e-6) {
+//                    P_(i, j) = 1e-6;
+//                }
+//            }
+//        }
         std::cout << "x_=\n" << x_ << "\n";
         std::cout << "P_=\n" << P_ << "\n";
 
