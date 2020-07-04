@@ -108,14 +108,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     is_initialized_ = true;
 }
 
-//VectorXd z_diff = Zsig.col(sigma_index) - z_pred;
-//while (z_diff(1) > M_PI) {
-//z_diff(1) -= 2 * M_PI;
-//}
-//while (z_diff(1) < -M_PI) {
-//z_diff(1) += 2 * M_PI;
-//}
-
 double NormaliseAngle(double angle) {
 //    if (angle > 2 * M_PI) {
 //        angle = std::fmod(angle, 2*M_PI);
