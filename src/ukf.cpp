@@ -8,13 +8,11 @@ using Eigen::VectorXd;
 
 // Get rid of any negative / tiny covariance values
 void UKF::EnsureCovarianceIsPositiveDefinite() {
-//    for (int i = 0; i < P_.rows(); i++) {
-//        for (int j = 0; j < P_.cols(); j++) {
-//            if (P_(i, j) < 1e-6) {
-//                P_(i, j) = 1e-6;
-//            }
-//        }
-//    }
+    for (int i = 0; i < P_.rows(); i++) {
+        if (P_(i, i) < 1e-6) {
+            P_(i, i) = 1e-6;
+        }
+    }
 }
 
 /**
@@ -39,12 +37,11 @@ UKF::UKF() {
 
     // initial covariance matrix
     P_ = MatrixXd::Identity(n_x_, n_x_);
-//    P_ *= 100;
-    P_(UKF_index::x, UKF_index::x) = 1;
-    P_(UKF_index::y, UKF_index::y) = 1;
-    P_(UKF_index::velocity, UKF_index::velocity) = 10;
+    P_(UKF_index::x, UKF_index::x) = 1.0;
+    P_(UKF_index::y, UKF_index::y) = 1.0;
+    P_(UKF_index::velocity, UKF_index::velocity) = 10.0;
     P_(UKF_index::theta, UKF_index::theta) = 0.2;  // reduce sigma point spread so it doesn't wrap around a 2*PI interval. A smaller spread will have a better linearisation.
-//    P_(UKF_index::theta_acc, UKF_index::theta_acc) = 3;
+    P_(UKF_index::theta_acc, UKF_index::theta_acc) = 1.0;
     P_aug_ = MatrixXd::Zero(n_aug_, n_aug_);
 
     Xsig_pred_ = MatrixXd::Zero(n_x_, n_sigma_);
