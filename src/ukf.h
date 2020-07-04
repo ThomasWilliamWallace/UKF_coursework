@@ -134,8 +134,8 @@ private:
     long long timestamp_;  // Most recently processed timestamp
     Eigen::MatrixXd sigma_points_;
 
-    Eigen::VectorXd RadarMeasurementFunction(MeasurementPackage meas_package);
-    Eigen::VectorXd LidarMeasurementFunction(MeasurementPackage meas_package);
+    Eigen::VectorXd InitialiseFromRadar(MeasurementPackage meas_package);
+    Eigen::VectorXd InitialiseFromLidar(MeasurementPackage meas_package);
 
     void EnsureCovarianceIsPositiveDefinite();
 };

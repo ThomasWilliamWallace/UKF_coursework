@@ -96,14 +96,7 @@ UKF::UKF() {
 UKF::~UKF() {}
 
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-    /**
-     * TODO: Complete this function! Make sure you switch between lidar and radar
-     * measurements.
-     */
-    //  std::cout << "UKF::ProcessMeasurement, x_=" << x_ << "\n";
-//    if (!is_initialized_ || abs(meas_package.timestamp_ - timestamp_) > 0) {
         Prediction((meas_package.timestamp_ - timestamp_) / 1000000.0);
-//    }
     if (meas_package.sensor_type_ == meas_package.LASER) {
         UpdateLidar(meas_package);
     } else {
@@ -129,20 +122,15 @@ double NormaliseAngle(double angle) {
     return angle;
 }
 
+/**
+ * Modify the state vector, x_. Predict sigma points, the state,
+ * and the state covariance matrix.
+ */
 void UKF::Prediction(double delta_t) {
-    /**
-     * TODO: Complete this function! Estimate the object's location.
-     * Modify the state vector, x_. Predict sigma points, the state,
-     * and the state covariance matrix.
-     */
-//    std::cout << "\nUKF::Prediction\n";
     x_history.push_back(x_);
     if (!is_initialized_) {
         return;
     }
-//    std::cout << "Prediction Update\n";
-//    std::cout << "x_=" << x_ << "\n";
-//    std::cout << "weights_=\n" << weights_ << "\n";
 
     Eigen::VectorXd old_x = x_;
     x_aug_ << x_, 0, 0;
@@ -151,50 +139,18 @@ void UKF::Prediction(double delta_t) {
     P_aug_(UKF_index::mu_theta_acc_acc, UKF_index::mu_theta_acc_acc) = std_yawdd_ * std_yawdd_;
     MatrixXd sqrt_matrix = P_aug_.llt().matrixL();
     MatrixXd sigma_diff = std::sqrt(lambda_ + n_aug_) * sqrt_matrix;
-//    std::cout << "x_aug_=\n" << x_aug_ << "\n";
-//    std::cout << "P_aug_=\n" << P_aug_ << "\n";
-//    std::cout << "sqrt_matrix=\n" << sqrt_matrix << "\n";
-//    std::cout << "sigma_diff=\n" << sigma_diff << "\n";
-
-//    std::stringstream ss;
-//    ss << x_aug_;
-//    std::string str_x_aug_ = ss.str();
-//    ss.str("");
-//    ss << sigma_diff;
-//    std::string str_sigma_diff = ss.str();
-//    ss.str("");
-//    std::string str_sigma_points;
 
     // Generate sigma points
     sigma_points_.fill(0.0);
     sigma_points_.col(0) = x_aug_;
-//    ss << sigma_points_;
-//    str_sigma_points = ss.str();
-//    ss.str("");
     for (int sigma = 0; sigma < n_aug_; sigma++) {
         sigma_points_.col(1 + sigma) = x_aug_ + sigma_diff.col(sigma);
-//        ss << sigma_points_;
-//        str_sigma_points = ss.str();
-//        ss.str("");
         sigma_points_(UKF_index::theta, 1 + sigma) = NormaliseAngle(sigma_points_(UKF_index::theta, 1 + sigma));
-//        ss << sigma_points_;
-//        str_sigma_points = ss.str();
-//        ss.str("");
     }
     for (int sigma = 0; sigma < n_aug_; sigma++) {
         sigma_points_.col(1 + n_aug_ + sigma) = x_aug_ - sigma_diff.col(sigma);
-//        ss << sigma_points_;
-//        str_sigma_points = ss.str();
-//        ss.str("");
         sigma_points_(UKF_index::theta, 1 + n_aug_ + sigma) = NormaliseAngle(sigma_points_(UKF_index::theta, 1 + n_aug_ + sigma));
-//        ss << sigma_points_;
-//        str_sigma_points = ss.str();
-//        ss.str("");
     }
-//    std::cout << "sigma_points_=\n" << sigma_points_ << "\n";
-//    std::string str_P;
-//    std::string str_x;
-//    std::string str_Xsig_pred;
     Xsig_pred_.fill(0);
     double delta_t2 = delta_t * delta_t;
     // Apply process model to sigma points
@@ -218,143 +174,50 @@ void UKF::Prediction(double delta_t) {
         } else {
             Xsig_pred_(UKF_index::x, sigma) = x + (velocity / theta_acc) * (std::sin(theta + theta_acc * delta_t) - std::sin(theta)) + delta_t2 * std::cos(theta) * mu_acc / 2.0;
         }
-//        ss << Xsig_pred_;
-//        str_Xsig_pred = ss.str();
-//        ss.str("");
         if (angular_acceleration_is_zero) {
             Xsig_pred_(UKF_index::y, sigma) = y + delta_t * velocity * std::sin(theta) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
         } else {
             Xsig_pred_(UKF_index::y, sigma) = y + (velocity / theta_acc) * (-std::cos(theta + theta_acc * delta_t) + std::cos(theta)) + delta_t2 * std::sin(theta) * mu_acc / 2.0;
         }
-//        ss << Xsig_pred_;
-//        str_Xsig_pred = ss.str();
-//        ss.str("");
         Xsig_pred_(UKF_index::velocity, sigma) = velocity + delta_t * mu_acc;
-//        ss << Xsig_pred_;
-//        str_Xsig_pred = ss.str();
-//        ss.str("");
         Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(theta + delta_t * theta_acc + delta_t2 * mu_theta_acc_acc / 2.0);
-//        Xsig_pred_(UKF_index::theta, sigma) = theta + delta_t * theta_acc + delta_t2 * mu_theta_acc_acc / 2.0;
-//        ss << Xsig_pred_;
-//        str_Xsig_pred = ss.str();
-//        ss.str("");
         Xsig_pred_(UKF_index::theta_acc, sigma) = theta_acc + delta_t * mu_theta_acc_acc;
-//        ss << Xsig_pred_;
-//        str_Xsig_pred = ss.str();
-//        ss.str("");
     }
-//    ss << P_;
-//    str_P = ss.str();
-//    ss.str("");
-//    ss << x_;
-//    str_x = ss.str();
-//    ss.str("");
-//    ss << Xsig_pred_;
-//    str_Xsig_pred = ss.str();
-//    ss.str("");
-//    std::cout << "Xsig_pred_=\n" << Xsig_pred_ << "\n";
 
     // Calculate sigma point mean
     x_.fill(0);
-//    ss << x_;
-//    str_x = ss.str();
-//    ss.str("");
     double mean_theta = Xsig_pred_(UKF_index::theta, 0   );
     // Centering the sigma centre point theta on 0, to allow averaging.
     Xsig_pred_normalised = Xsig_pred_;
     Xsig_pred_normalised.row(UKF_index::theta) -= mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
-//    ss << Xsig_pred_normalised;
-//    std::string str_Xsig_pred_normalised = ss.str();
-//    ss.str("");
     for (int sigma = 0; sigma < n_sigma_; sigma++) {
         Xsig_pred_normalised(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_normalised(UKF_index::theta, sigma));
     }
-//    ss << Xsig_pred_normalised;
-//    str_Xsig_pred_normalised = ss.str();
-//    ss.str("");
     for (int state_index = 0; state_index < n_x_; state_index++) {
         for (int sig_index = 0; sig_index < n_sigma_; sig_index++) {
             x_(state_index) += Xsig_pred_normalised(state_index, sig_index) * weights_(sig_index);
-//            ss << x_;
-//            str_x = ss.str();
-//            ss.str("");
         }
     }
     // Shifting the sigma point back to it's original value.
     Xsig_pred_normalised.row(UKF_index::theta) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
-//    ss << Xsig_pred_;
-//    str_Xsig_pred_normalised = ss.str();
-//    ss.str("");
-//    for (int sigma = 0; sigma < n_sigma_; sigma++) {
-//        Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(Xsig_pred_(UKF_index::theta, sigma));
-//    }
-//    ss << Xsig_pred_;
-//    str_Xsig_pred = ss.str();
-//    ss.str("");
     x_.row(UKF_index::theta) += mean_theta * Eigen::VectorXd::Ones(1).transpose();
-//    ss << x_;
-//    str_x = ss.str();
-//    ss.str("");
 
     x_(UKF_index::theta) = NormaliseAngle(x_(UKF_index::theta));
-//    ss << x_;
-//    str_x = ss.str();
-//    ss.str("");
-//    std::cout << "x_=\n" << x_ << "\n";
 
     // Calculate sigma point covariance
     P_.fill(0.0);
-//    std::string str_Xsig_pred_col;
-//    std::string str_weight;
-//    std::string str_diff;
-//    std::string str_diff_squared;
-//    std::string str_contribution;
     for (int sig_index = 0; sig_index < n_sigma_; sig_index++) {
-//        ss << P_;
-//        str_P = ss.str();
-//        ss.str("");
-//        ss << x_;
-//        str_x = ss.str();
-//        ss.str("");
-//        ss << Xsig_pred_normalised.col(sig_index);
-//        str_Xsig_pred_col = ss.str();
-//        ss.str("");
-//        std::stringstream ss_weight;
-//        ss_weight << weights_(sig_index);
-//        str_weight = ss_weight.str();
         VectorXd difference = Xsig_pred_.col(sig_index) - x_;
-//        std::stringstream ss_diff;
-//        ss_diff << difference;
-//        str_diff = ss_diff.str();
         MatrixXd diff_squared = difference * difference.transpose();
-//        std::stringstream ss_diff_squared;
-//        ss_diff_squared << diff_squared;
-//        str_diff_squared = ss_diff_squared.str();
         MatrixXd contribution = diff_squared * weights_(sig_index);
-//        std::stringstream ss_contribution;
-//        ss_contribution << contribution;
-//        str_contribution = ss_contribution.str();
         P_ += difference * difference.transpose() * weights_(sig_index);
-//        ss.str("");
-//        ss << P_;
-//        str_P = ss.str();
-//        ss.str("");
     }
 
     EnsureCovarianceIsPositiveDefinite();
 
-//    std::cout << "x_=\n" << x_ << "\n";
-//    std::cout << "P_=\n" << P_ << "\n";
-    double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
-    delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
-//    if (abs(delta_theta) > 1.6) {
-//        ss << old_x;
-//        std::string str_old_x = ss.str();
-//        ss.str("");
-//    }
 }
 
-Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
+Eigen::VectorXd UKF::InitialiseFromLidar(MeasurementPackage meas_package) {
     double meas_x = meas_package.raw_measurements_(Lidar_index::x);
     double meas_y = meas_package.raw_measurements_(Lidar_index::y);
 
@@ -367,18 +230,13 @@ Eigen::VectorXd UKF::LidarMeasurementFunction(MeasurementPackage meas_package) {
     return measured_state;
 }
 
+/**
+ * Use lidar data to update the belief about the object's position.
+ * Modify the state vector, x_, and covariance, P_.
+ * You can also calculate the lidar NIS, if desired.
+ */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
-    /**
-     * TODO: Complete this function! Use lidar data to update the belief
-     * about the object's position. Modify the state vector, x_, and
-     * covariance, P_.
-     * You can also calculate the lidar NIS, if desired.
-     */
-    Eigen::VectorXd measured_state = LidarMeasurementFunction(meas_package);
-
     if (is_initialized_) {
-//        std::cout << "Lidar Measurement Update\n";
-//        std::stringstream ss;
         Eigen::VectorXd old_x = x_;
         // Apply measurement model to sigma points
         Eigen::MatrixXd z_sig = Eigen::MatrixXd(n_z_lidar_, n_sigma_);
@@ -388,9 +246,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
             z_sig(Lidar_index::x, sigma) = x;
             z_sig(Lidar_index::y, sigma) = y;
         }
-//        ss << z_sig;
-//        std::string str_z_sig = ss.str();
-//        ss.str("");
 
         // Calculate mean and covariance from sigma points
         Eigen::VectorXd z_mean = Eigen::VectorXd::Zero(n_z_lidar_);
@@ -399,124 +254,46 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
                 z_mean(row) += z_sig(row, sigma) * weights_(sigma);
             }
         }
-//        ss << z_mean;
-//        std::string str_z_mean = ss.str();
-//        ss.str("");
 
         MatrixXd R = MatrixXd::Zero(n_z_lidar_, n_z_lidar_);
         R(Lidar_index::x, Lidar_index::x) = std_laspx_ * std_laspx_;
         R(Lidar_index::y, Lidar_index::y) = std_laspy_ * std_laspy_;
-//        ss << R;
-//        std::string str_R = ss.str();
-//        ss.str("");
 
         MatrixXd S = MatrixXd::Zero(n_z_lidar_, n_z_lidar_);
         S += R;
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
-//            std::cout << "sigma=" << sigma << "\n";
             Eigen::VectorXd difference = z_sig.col(sigma) - z_mean;
-//            ss << difference;
-//            std::string str_z_sig_z_mean_diff = ss.str();
-//            std::cout << "str_z_sig_z_mean_diff=\n" << str_z_sig_z_mean_diff << "\n";
-//            ss.str("");
             S += difference * difference.transpose() * weights_(sigma);
         }
-//        ss << S;
-//        std::string str_S = ss.str();
-//        ss.str("");
 
-        // UKF update (can be shared with radar)
+        // UKF update
         Eigen::MatrixXd Tc = Eigen::MatrixXd::Zero(n_x_, n_z_lidar_);
-//        ss << Tc;
-//        std::string str_Tc = ss.str();
-//        ss.str("");
-//        ss << Xsig_pred_;
-//        std::string str_Xsig_pred_ = ss.str();
-//        ss.str("");
         for (int sigma = 0; sigma < n_sigma_; sigma++) {
-//            std::cout << "sigma=" << sigma << "\n";
             VectorXd x_diff = Xsig_pred_normalised.col(sigma) - x_;
-//            ss << x_diff;
-//            std::string str_tc_x_diff = ss.str();
-//            std::cout << "str_tc_x_diff=\n" << str_tc_x_diff << "\n";
-//            ss.str("");
             x_diff(UKF_index::theta) = NormaliseAngle(x_diff(UKF_index::theta));
-//            ss << x_diff;
-//            std::string str_tc_x_diff_normalised = ss.str();
-//            std::cout << "tc_x_diff_normalised=\n" << str_tc_x_diff_normalised << "\n";
-//            ss.str("");
             VectorXd z_diff = z_sig.col(sigma) - z_mean;
-//            ss << z_diff;
-//            std::string str_tc_z_diff = ss.str();
-//            std::cout << "str_tc_z_diff=\n" << str_tc_z_diff << "\n";
-//            ss.str("");
             Eigen::MatrixXd mult = x_diff * z_diff.transpose();
-//            ss << mult;
-//            std::string str_tc_mult = ss.str();
-//            std::cout << "str_tc_mult=\n";
-//            std::cout << str_tc_mult << "\n";
-//            ss.str("");
             Tc = Tc + weights_(sigma) * mult;
-//            ss << Tc;
-//            str_Tc = ss.str();
-//            ss.str("");
-//            std::cout << "\n";
         }
 
         // calculate Kalman gain K;
-//        ss << S.inverse();
-//        std::string str_S_inverse = ss.str();
-//        ss.str("");
         MatrixXd K;
         K = Tc * S.inverse();
-//        ss << K;
-//        std::string str_K = ss.str();
-//        ss.str("");
 
         // update state mean and covariance matrix
-//        ss << meas_package.raw_measurements_;
-//        std::string str_meas = ss.str();
-//        ss.str("");
         VectorXd z_diff = meas_package.raw_measurements_ - z_mean;
-//        ss << z_diff;
-//        std::string str_z_diff = ss.str();
-//        ss.str("");
-
-//        ss << K * z_diff;
-//        std::string str_k_z_diff = ss.str();
-//        ss.str("");
         x_ = x_ + K * z_diff;
-//        ss << x_;
-//        std::string str_x = ss.str();
-//        ss.str("");
         x_(UKF_index::theta) = NormaliseAngle(x_(UKF_index::theta));
-//        ss << x_;
-//        std::string str_x_normalised = ss.str();
-//        ss.str("");
-        double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
-        delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
-//        if (abs(delta_theta) > 1.6) {
-//            ss << old_x;
-//            std::string str_old_x = ss.str();
-//            ss.str("");
-//        }
         P_ = P_ - K * S * K.transpose();
 
         EnsureCovarianceIsPositiveDefinite();
 
-//        std::cout << "x_=\n" << x_ << "\n";
-//        std::cout << "P_=\n" << P_ << "\n";
-
     } else {
-        x_ << measured_state;
-        x_(UKF_index::velocity) = 5;
-//        x_(UKF_index::theta) = M_PI/2;
-//      x_(UKF_index::theta_acc) = M_PI/5;
-//        P_ *= 1e-6;
+        x_ << InitialiseFromLidar(meas_package);
     }
 }
 
-Eigen::VectorXd UKF::RadarMeasurementFunction(MeasurementPackage meas_package) {
+Eigen::VectorXd UKF::InitialiseFromRadar(MeasurementPackage meas_package) {
     double meas_longitudinal_distance = meas_package.raw_measurements_(Radar_index::longitudinal_distance);
     double meas_positional_theta = meas_package.raw_measurements_(Radar_index::angle_of_view);
     double meas_longitudinal_velocity = meas_package.raw_measurements_(Radar_index::longitudinal_velocity);
@@ -532,27 +309,15 @@ Eigen::VectorXd UKF::RadarMeasurementFunction(MeasurementPackage meas_package) {
     return measured_state;
 }
 
+/**
+ * Use radar data to update the belief
+ * about the object's position. Modify the state vector, x_, and
+ * covariance, P_.
+ * You can also calculate the radar NIS, if desired.
+ */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
-    /**
-     * TODO: Complete this function! Use radar data to update the belief
-     * about the object's position. Modify the state vector, x_, and
-     * covariance, P_.
-     * You can also calculate the radar NIS, if desired.
-     */
-    Eigen::VectorXd measured_state = RadarMeasurementFunction(meas_package);
 
     if (is_initialized_) {
-//        std::cout << "Radar Measurement Update\n";
-//        std::stringstream ss;
-//        ss << x_;
-//        std::string str_x_ = ss.str();
-//        ss.str("");
-//        ss << Xsig_pred_;
-//        std::string str_Xsig_pred_ = ss.str();
-//        ss.str("");
-//        ss << Xsig_pred_normalised;
-//        std::string str_Xsig_pred_normalised = ss.str();
-//        ss.str("");
         Eigen::VectorXd old_x = x_;
         // Apply measurement model to sigma points
         Eigen::MatrixXd z_sig = Eigen::MatrixXd(n_z_radar_, n_sigma_);
@@ -568,9 +333,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             z_sig(Radar_index::angle_of_view, sigma) = angle_of_view;
             z_sig(Radar_index::longitudinal_velocity, sigma) = longitudinal_velocity;
         }
-//        ss << z_sig;
-//        std::string str_z_sig = ss.str();
-//        ss.str("");
 
         // Calculate mean and covariance from sigma points
         // center angle on the sigma mean
@@ -590,17 +352,11 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         z_sig.row(Radar_index::angle_of_view) += mean_theta * Eigen::VectorXd::Ones(n_sigma_).transpose();
         z_mean(Radar_index::angle_of_view) += mean_theta;
         z_mean(Radar_index::angle_of_view) = NormaliseAngle(z_mean(Radar_index::angle_of_view));
-//        ss << z_mean;
-//        std::string str_z_mean = ss.str();
-//        ss.str("");
 
         MatrixXd R = MatrixXd::Zero(n_z_radar_, n_z_radar_);
         R(Radar_index::longitudinal_distance, Radar_index::longitudinal_distance) = std_radr_ * std_radr_;
         R(Radar_index::angle_of_view, Radar_index::angle_of_view) = std_radphi_ * std_radphi_;
         R(Radar_index::longitudinal_velocity, Radar_index::longitudinal_velocity) = std_radrd_ * std_radrd_;
-//        ss << R;
-//        std::string str_R = ss.str();
-//        ss.str("");
 
         MatrixXd S = MatrixXd::Zero(n_z_radar_, n_z_radar_);
         S += R;
@@ -608,9 +364,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             Eigen::VectorXd difference = z_sig.col(sigma) - z_mean;
             S += difference * difference.transpose() * weights_(sigma);
         }
-//        ss << S;
-//        std::string str_S = ss.str();
-//        ss.str("");
 
         // UKF update (can be shared with lidar)
         Eigen::MatrixXd Tc = Eigen::MatrixXd::Zero(n_x_, n_z_radar_);
@@ -621,64 +374,21 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             z_diff(Radar_index::angle_of_view) = NormaliseAngle(z_diff(Radar_index::angle_of_view));
             Tc = Tc + weights_(sigma) * x_diff * z_diff.transpose();
         }
-//        ss << Tc;
-//        std::string str_Tc = ss.str();
-//        ss.str("");
 
         // calculate Kalman gain K;
-//        ss << S.inverse();
-//        std::string str_S_inverse = ss.str();
-//        ss.str("");
         MatrixXd K;
         K = Tc * S.inverse();
-//        ss << K;
-//        std::string str_K = ss.str();
-//        ss.str("");
 
         // update state mean and covariance matrix
-//        ss << meas_package.raw_measurements_;
-//        std::string str_meas = ss.str();
-//        ss.str("");
         VectorXd z_diff = meas_package.raw_measurements_ - z_mean;
-//        ss << z_diff;
-//        std::string str_z_diff = ss.str();
-//        ss.str("");
         z_diff(Radar_index::angle_of_view) = NormaliseAngle(z_diff(Radar_index::angle_of_view));
-//        ss << z_diff;
-//        std::string str_z_diff_normalised = ss.str();
-//        ss.str("");
-
-//        ss << K * z_diff;
-//        std::string str_k_z_diff = ss.str();
-//        ss.str("");
         x_ = x_ + K * z_diff;
-//        ss << x_;
-//        std::string str_x = ss.str();
-//        ss.str("");
         x_(UKF_index::theta) = NormaliseAngle(x_(UKF_index::theta));
-//        ss << x_;
-//        std::string str_x_normalised = ss.str();
-//        ss.str("");
-        double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
-        delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
-        if (abs(delta_theta) > 1.6) {
-//            ss << old_x;
-//            std::string str_old_x = ss.str();
-//            ss.str("");
-        }
         P_ = P_ - K * S * K.transpose();
 
         EnsureCovarianceIsPositiveDefinite();
 
-//        std::cout << "x_=\n" << x_ << "\n";
-//        std::cout << "P_=\n" << P_ << "\n";
-
     } else {
-        x_ << measured_state;
-        x_(UKF_index::velocity) = 5;
-//        x_(UKF_index::theta) = M_PI/2;
-//      x_(UKF_index::theta_acc) = M_PI/5;
-//      P_ << 0;
-//        P_ *= 1e-6;
+        x_ << InitialiseFromRadar(meas_package);
     }
 }
