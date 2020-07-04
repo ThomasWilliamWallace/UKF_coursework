@@ -512,8 +512,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
     } else {
         x_ << measured_state;
-        x_(2) = 10;
-        x_(3) = M_PI/2;
+        x_(2) = 5;
+//        x_(3) = M_PI/2;
 //        x_(4) = M_PI/5;
         P_ *= 1e-6;
     }
@@ -675,8 +675,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
     } else {
         x_ << measured_state;
-        x_(2) = 10;
-      x_(3) = M_PI/2;
+        x_(2) = 5;
+//      x_(3) = M_PI/2;
 //      x_(4) = M_PI/5;
 //      P_ << 0;
         P_ *= 1e-6;
