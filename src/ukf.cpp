@@ -39,10 +39,10 @@ UKF::UKF() {
 
     // initial covariance matrix
     P_ = MatrixXd::Identity(n_x_, n_x_);
-    P_ *= 100;
-//    P_(UKF_index::x, UKF_index::x) = 0.2;
-//    P_(UKF_index::y, UKF_index::y) = 0.2;
-//    P_(UKF_index::velocity, UKF_index::velocity) = 1;
+//    P_ *= 100;
+    P_(UKF_index::x, UKF_index::x) = 1;
+    P_(UKF_index::y, UKF_index::y) = 1;
+    P_(UKF_index::velocity, UKF_index::velocity) = 10;
     P_(UKF_index::theta, UKF_index::theta) = 0.2;  // reduce sigma point spread so it doesn't wrap around a 2*PI interval. A smaller spread will have a better linearisation.
 //    P_(UKF_index::theta_acc, UKF_index::theta_acc) = 3;
     P_aug_ = MatrixXd::Zero(n_aug_, n_aug_);
@@ -140,7 +140,7 @@ void UKF::Prediction(double delta_t) {
     if (!is_initialized_) {
         return;
     }
-    std::cout << "Prediction Update\n";
+//    std::cout << "Prediction Update\n";
 //    std::cout << "x_=" << x_ << "\n";
 //    std::cout << "weights_=\n" << weights_ << "\n";
 
@@ -343,8 +343,8 @@ void UKF::Prediction(double delta_t) {
 
     EnsureCovarianceIsPositiveDefinite();
 
-    std::cout << "x_=\n" << x_ << "\n";
-    std::cout << "P_=\n" << P_ << "\n";
+//    std::cout << "x_=\n" << x_ << "\n";
+//    std::cout << "P_=\n" << P_ << "\n";
     double delta_theta = x_(UKF_index::theta) - old_x(UKF_index::theta);
     delta_theta += (delta_theta>M_PI) ? -M_PI*2 : (delta_theta<-M_PI) ? M_PI*2 : 0;
 //    if (abs(delta_theta) > 1.6) {
@@ -377,7 +377,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     Eigen::VectorXd measured_state = LidarMeasurementFunction(meas_package);
 
     if (is_initialized_) {
-        std::cout << "Lidar Measurement Update\n";
+//        std::cout << "Lidar Measurement Update\n";
 //        std::stringstream ss;
         Eigen::VectorXd old_x = x_;
         // Apply measurement model to sigma points
@@ -504,8 +504,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
         EnsureCovarianceIsPositiveDefinite();
 
-        std::cout << "x_=\n" << x_ << "\n";
-        std::cout << "P_=\n" << P_ << "\n";
+//        std::cout << "x_=\n" << x_ << "\n";
+//        std::cout << "P_=\n" << P_ << "\n";
 
     } else {
         x_ << measured_state;
@@ -542,7 +542,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     Eigen::VectorXd measured_state = RadarMeasurementFunction(meas_package);
 
     if (is_initialized_) {
-        std::cout << "Radar Measurement Update\n";
+//        std::cout << "Radar Measurement Update\n";
 //        std::stringstream ss;
 //        ss << x_;
 //        std::string str_x_ = ss.str();
@@ -670,8 +670,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
         EnsureCovarianceIsPositiveDefinite();
 
-        std::cout << "x_=\n" << x_ << "\n";
-        std::cout << "P_=\n" << P_ << "\n";
+//        std::cout << "x_=\n" << x_ << "\n";
+//        std::cout << "P_=\n" << P_ << "\n";
 
     } else {
         x_ << measured_state;
