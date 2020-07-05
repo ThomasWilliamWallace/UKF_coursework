@@ -9,8 +9,8 @@ using Eigen::VectorXd;
 // Get rid of any negative / tiny covariance values
 void UKF::EnsureCovarianceIsPositiveDefinite() {
     for (int i = 0; i < P_.rows(); i++) {
-        if (P_(i, i) < 1e-6) {
-            P_(i, i) = 1e-6;
+        if (P_(i, i) < 1e-12) {
+            P_(i, i) = 1e-12;
         }
     }
 }
@@ -136,6 +136,9 @@ void UKF::Prediction(double delta_t) {
     P_aug_(UKF_index::mu_theta_acc_acc, UKF_index::mu_theta_acc_acc) = std_yawdd_ * std_yawdd_;
     MatrixXd sqrt_matrix = P_aug_.llt().matrixL();
     MatrixXd sigma_diff = std::sqrt(lambda_ + n_aug_) * sqrt_matrix;
+//    std::cout << "P_aug_=\n" << P_aug_ << "\n";
+//    std::cout << "sqrt_matrix=\n" << sqrt_matrix << "\n";
+//    std::cout << "sigma_diff=\n" << sigma_diff << "\n";
 
     // Generate sigma points
     sigma_points_.fill(0.0);
@@ -148,6 +151,7 @@ void UKF::Prediction(double delta_t) {
         sigma_points_.col(1 + n_aug_ + sigma) = x_aug_ - sigma_diff.col(sigma);
         sigma_points_(UKF_index::theta, 1 + n_aug_ + sigma) = NormaliseAngle(sigma_points_(UKF_index::theta, 1 + n_aug_ + sigma));
     }
+//    std::cout << "sigma_points_=\n" << sigma_points_ << "\n";
     Xsig_pred_.fill(0);
     double delta_t2 = delta_t * delta_t;
     // Apply process model to sigma points
@@ -180,6 +184,7 @@ void UKF::Prediction(double delta_t) {
         Xsig_pred_(UKF_index::theta, sigma) = NormaliseAngle(theta + delta_t * theta_acc + delta_t2 * mu_theta_acc_acc / 2.0);
         Xsig_pred_(UKF_index::theta_acc, sigma) = theta_acc + delta_t * mu_theta_acc_acc;
     }
+//    std::cout << "Xsig_pred_=\n" << Xsig_pred_ << "\n";
 
     // Calculate sigma point mean
     x_.fill(0);
@@ -200,6 +205,8 @@ void UKF::Prediction(double delta_t) {
     x_.row(UKF_index::theta) += mean_theta * Eigen::VectorXd::Ones(1).transpose();
 
     x_(UKF_index::theta) = NormaliseAngle(x_(UKF_index::theta));
+//    std::cout << "Xsig_pred_normalised=\n" << Xsig_pred_normalised << "\n";
+//    std::cout << "x_=\n" << x_ << "\n";
 
     // Calculate sigma point covariance
     P_.fill(0.0);
@@ -210,7 +217,9 @@ void UKF::Prediction(double delta_t) {
         P_ += difference * difference.transpose() * weights_(sig_index);
     }
 
+//    std::cout << "P_=\n" << P_ << "\n";
     EnsureCovarianceIsPositiveDefinite();
+//    std::cout << "P_=\n" << P_ << "\n";
 
 }
 
